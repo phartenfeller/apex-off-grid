@@ -9,7 +9,7 @@ const BLOCK_SIZE = 4096;
 const DIRECTORY_CACHE = new Map();
 
 function log(...args) {
-  // console.debug(...args);
+  console.debug(...args);
 }
 
 /**
@@ -108,7 +108,12 @@ export class OriginPrivateFileSystemVFS extends VFS.Base {
   xRead(fileId, pData, iOffset) {
     return this.handleAsync(async () => {
       const fileEntry = this.#mapIdToFile.get(fileId);
-      log(`xRead ${fileEntry.filename} ${pData.size} ${iOffset}`);
+      log(`xRead ${fileEntry?.filename} ${pData?.size} ${iOffset}`);
+
+      if (!fileEntry) {
+        console.log("xRead: no file entry");
+        return VFS.SQLITE_IOERR;
+      }
 
       let nBytesRead;
       if (fileEntry.accessHandle) {

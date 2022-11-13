@@ -1,8 +1,8 @@
 import * as SQLite from "wa-sqlite";
-import SQLiteESMFactory from "wa-sqlite/dist/wa-sqlite.mjs";
+import SQLiteModuleFactory from "wa-sqlite/dist/wa-sqlite-async.mjs";
 import { OriginPrivateFileSystemVFS } from "../src/PrivateFileSystemVFS.js";
 
-console.log("file loaded");
+console.log("worker loaded");
 
 const DB_NAME = "file:///benchmark?foo=bar";
 const TESTS = [
@@ -24,21 +24,16 @@ const TESTS = [
   test16,
 ];
 
-// keep import
-if (1 === 2) {
-  SQLiteESMFactory;
-}
-
 let sqlite3, db;
 (async function () {
-  const module = await SQLiteModuleFactory();
-  sqlite3 = SQLite.Factory(module);
+  const mod = await SQLiteModuleFactory();
+  sqlite3 = SQLite.Factory(mod);
   // @ts-ignore
   sqlite3.vfs_register(new OriginPrivateFileSystemVFS(), true);
 
   addEventListener("message", async function ({ data }) {
     let result;
-    switch (data.f) {
+    switch (data?.f) {
       case "initialize":
         result = await initialize(data.preamble);
         break;
@@ -51,7 +46,7 @@ let sqlite3, db;
         result = await finalize();
         break;
       default:
-        throw new Error(`unrecognized request '${data.f}'`);
+        console.error(`unrecognized request '${data?.f}'`);
     }
     postMessage(result);
   });
@@ -87,6 +82,7 @@ async function clearFilesystem() {
 
 // Test 1: 1000 INSERTs
 async function test1(sqlite3, db) {
+  console.log("test1");
   await sqlite3.exec(
     db,
     `

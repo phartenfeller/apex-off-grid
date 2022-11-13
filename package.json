@@ -4,14 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "npx webpack-cli serve --mode=development --config webpack.dev.js",
+    "serve": "npx webpack-cli serve --mode=development"
   },
-  "devDependencies": {
-    "vite": "^3.2.3"
-  },
+  "devDependencies": {},
   "dependencies": {
-    "wa-sqlite": "rhashimoto/wa-sqlite#buildless"
+    "html-webpack-plugin": "^5.5.0",
+    "wa-sqlite": "rhashimoto/wa-sqlite#buildless",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^4.10.0",
+    "webpack-dev-server": "^4.11.1",
+    "worker-loader": "^3.0.8"
   }
 }
