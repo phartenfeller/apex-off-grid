@@ -7,7 +7,9 @@
     "start": "npx webpack-cli serve --mode=development --config webpack.dev.js",
     "serve": "npx webpack-cli serve --mode=development"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "rome": "^10.0.1"
+  },
   "dependencies": {
     "html-webpack-plugin": "^5.5.0",
     "wa-sqlite": "rhashimoto/wa-sqlite#buildless",
