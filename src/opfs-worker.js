@@ -1,10 +1,10 @@
-import * as SQLite from "wa-sqlite";
-import SQLiteModuleFactory from "wa-sqlite/dist/wa-sqlite-async.mjs";
-import { OriginPrivateFileSystemVFS } from "../src/PrivateFileSystemVFS.js";
+import * as SQLite from 'wa-sqlite';
+import SQLiteModuleFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
+import { OriginPrivateFileSystemVFS } from '../src/PrivateFileSystemVFS.js';
 
-console.log("worker loaded");
+console.log('worker loaded');
 
-const DB_NAME = "file:///benchmark?foo=bar";
+const DB_NAME = 'file:///benchmark?foo=bar';
 const TESTS = [
   test1,
   test2,
@@ -24,27 +24,48 @@ const TESTS = [
   test16,
 ];
 
-let sqlite3, db;
+let sqlite3;
+let db;
 (async function () {
   const mod = await SQLiteModuleFactory();
   sqlite3 = SQLite.Factory(mod);
   // @ts-ignore
   sqlite3.vfs_register(new OriginPrivateFileSystemVFS(), true);
 
-  addEventListener("message", async function ({ data }) {
+  addEventListener('message', async function ({ data }) {
     let result;
     switch (data?.f) {
-      case "initialize":
+      case 'initialize': {
         result = await initialize(data.preamble);
         break;
-      case "test":
+      }
+      case 'create_table': {
+        const start = Date.now();
+        await createTable(sqlite3, db);
+        result = Date.now() - start;
+        break;
+      }
+      case 'query_data': {
+        const start = Date.now();
+        const data = await queryTable(sqlite3, db);
+        console.log('data', data);
+        result = Date.now() - start;
+        break;
+      }
+      case 'persist': {
+        persist();
+        break;
+      }
+      case 'test': {
         const start = Date.now();
         await TESTS[data.i](sqlite3, db);
         result = Date.now() - start;
         break;
-      case "finalize":
+      }
+      case 'finalize': {
         result = await finalize();
         break;
+      }
       default:
         console.error(`unrecognized request '${data?.f}'`);
     }
@@ -61,7 +82,7 @@ async function initialize(preamble) {
     SQLite.SQLITE_OPEN_CREATE |
       SQLite.SQLITE_OPEN_READWRITE |
       SQLite.SQLITE_OPEN_URI,
-    "opfs"
+    'opfs',
   );
   await sqlite3.exec(db, preamble);
 }
@@ -80,14 +101,14 @@ async function clearFilesystem() {
   }
 }
 
-// Test 1: 1000 INSERTs
-async function test1(sqlite3, db) {
-  console.log("test1");
+async function createTable(sqlite3, db) {
+  console.log('createTable');
   await sqlite3.exec(
     db,
     `
+    BEGIN;
     CREATE TABLE t1(a INTEGER, b INTEGER, c VARCHAR(100));
-  `
+  `,
   );
   for (let i = 0; i < 1000; ++i) {
     const n = Math.floor(Math.random() * 100000);
@@ -95,9 +116,63 @@ async function test1(sqlite3, db) {
       db,
       `
       INSERT INTO t1 VALUES(${i + 1}, ${n}, '${numberName(n)}');
-    `
+    `,
     );
   }
+  await sqlite3.exec(
+    db,
+    `
+    COMMIT;
+  `,
+  );
+}
+
+function queryTable(sqlite3, db) {
+  console.log('queryTable');
+  let data = [];
+  return new Promise((resolve, reject) => {
+    try {
+      sqlite3.exec(
+        db,
+        `
+      select * from t1;
+    `,
+        (row) => {
+          data.push(row);
+        },
+      );
+
+      resolve(data);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+// Test 1: 1000 INSERTs
+async function test1(sqlite3, db) {
+  console.log('test1');
+  await sqlite3.exec(
+    db,
+    `
+    CREATE TABLE my_table(a INTEGER, b INTEGER, c VARCHAR(100));
+  `,
+  );
+  for (let i = 0; i < 1000; ++i) {
+    const n = Math.floor(Math.random() * 100000);
+    await sqlite3.exec(
+      db,
+      `
+      INSERT INTO t1 VALUES(${i + 1}, ${n}, '${numberName(n)}');
+    `,
+    );
+  }
+}
+
+async function persist() {
+  console.log('saving...');
+  await navigator.storage.persist();
+  console.log('saved!');
 }
 
 // Test 2: 25000 INSERTs in a transaction
@@ -107,7 +182,7 @@ async function test2(sqlite3, db) {
     `
     BEGIN;
     CREATE TABLE t2(a INTEGER, b INTEGER, c VARCHAR(100));
-  `
+  `,
   );
   for (let i = 0; i < 25000; ++i) {
     const n = Math.floor(Math.random() * 100000);
@@ -115,14 +190,14 @@ async function test2(sqlite3, db) {
       db,
       `
       INSERT INTO t2 VALUES(${i + 1}, ${n}, '${numberName(n)}');
-    `
+    `,
     );
   }
   await sqlite3.exec(
     db,
     `
     COMMIT;
-  `
+  `,
   );
 }
 
@@ -134,7 +209,7 @@ async function test3(sqlite3, db) {
     BEGIN;
     CREATE TABLE t3(a INTEGER, b INTEGER, c VARCHAR(100));
     CREATE INDEX i3 ON t3(c);
-  `
+  `,
   );
   for (let i = 0; i < 25000; ++i) {
     const n = Math.floor(Math.random() * 100000);
@@ -142,14 +217,14 @@ async function test3(sqlite3, db) {
       db,
       `
       INSERT INTO t3 VALUES(${i + 1}, ${n}, '${numberName(n)}');
-    `
+    `,
     );
   }
   await sqlite3.exec(
     db,
     `
     COMMIT;
-  `
+  `,
   );
 }
 
@@ -159,7 +234,7 @@ async function test4(sqlite3, db) {
     db,
     `
     BEGIN;
-  `
+  `,
   );
   for (let i = 0; i < 100; ++i) {
     await sqlite3.exec(
@@ -168,14 +243,14 @@ async function test4(sqlite3, db) {
       SELECT count(*), avg(b) FROM t2 WHERE b>=${i * 100} AND b<${
         i * 100 + 1000
       };
-    `
+    `,
     );
   }
   await sqlite3.exec(
     db,
     `
     COMMIT;
-  `
+  `,
   );
 }
 
@@ -185,21 +260,21 @@ async function test5(sqlite3, db) {
     db,
     `
     BEGIN;
-  `
+  `,
   );
   for (let i = 0; i < 100; ++i) {
     await sqlite3.exec(
       db,
       `
     SELECT count(*), avg(b) FROM t2 WHERE c LIKE '%${numberName(i + 1)}%';
-    `
+    `,
     );
   }
   await sqlite3.exec(
     db,
     `
     COMMIT;
-  `
+  `,
   );
 }
 
@@ -210,7 +285,7 @@ async function test6(sqlite3, db) {
     `
     CREATE INDEX i2a ON t2(a);
     CREATE INDEX i2b ON t2(b);
-  `
+  `,
   );
 }
 
@@ -220,23 +295,21 @@ async function test7(sqlite3, db) {
     db,
     `
     BEGIN;
-  `
+  `,
   );
   for (let i = 0; i < 5000; ++i) {
     await sqlite3.exec(
       db,
       `
-      SELECT count(*), avg(b) FROM t2 WHERE b>=${i * 100} AND b<${
-        i * 100 + 100
-      };
-    `
+      SELECT count(*), avg(b) FROM t2 WHERE b>=${i * 100} AND b<${i * 100 + 100};
+    `,
     );
   }
   await sqlite3.exec(
     db,
     `
     COMMIT;
-  `
+  `,
   );
 }
 
@@ -246,21 +319,21 @@ async function test8(sqlite3, db) {
     db,
     `
     BEGIN;
-  `
+  `,
   );
   for (let i = 0; i < 1000; ++i) {
     await sqlite3.exec(
       db,
       `
       UPDATE t1 SET b=b*2 WHERE a>=${i * 10} AND a<${i * 10 + 10};
-    `
+    `,
     );
   }
   await sqlite3.exec(
     db,
     `
     COMMIT;
-  `
+  `,
   );
 }
 
@@ -270,7 +343,7 @@ async function test9(sqlite3, db) {
     db,
     `
     BEGIN;
-  `
+  `,
   );
   for (let i = 0; i < 25000; ++i) {
     const n = Math.floor(Math.random() * 100000);
@@ -278,14 +351,14 @@ async function test9(sqlite3, db) {
       db,
       `
       UPDATE t2 SET b=${n} WHERE a=${i + 1};
-    `
+    `,
     );
   }
   await sqlite3.exec(
     db,
     `
     COMMIT;
-  `
+  `,
   );
 }
 
@@ -295,7 +368,7 @@ async function test10(sqlite3, db) {
     db,
     `
     BEGIN;
-  `
+  `,
   );
   for (let i = 0; i < 25000; ++i) {
     const n = Math.floor(Math.random() * 100000);
@@ -303,14 +376,14 @@ async function test10(sqlite3, db) {
       db,
       `
       UPDATE t2 SET c='${numberName(n)}' WHERE a=${i + 1};
-    `
+    `,
     );
   }
   await sqlite3.exec(
     db,
     `
     COMMIT;
-  `
+  `,
   );
 }
 
@@ -323,7 +396,7 @@ async function test11(sqlite3, db) {
     INSERT INTO t1 SELECT b,a,c FROM t2;
     INSERT INTO t2 SELECT b,a,c FROM t1;
     COMMIT;
-  `
+  `,
   );
 }
 
@@ -333,7 +406,7 @@ async function test12(sqlite3, db) {
     db,
     `
     DELETE FROM t2 WHERE c LIKE '%fifty%';
-  `
+  `,
   );
 }
 
@@ -343,7 +416,7 @@ async function test13(sqlite3, db) {
     db,
     `
     DELETE FROM t2 WHERE a>10 AND a<20000;
-  `
+  `,
   );
 }
 
@@ -353,7 +426,7 @@ async function test14(sqlite3, db) {
     db,
     `
     INSERT INTO t2 SELECT * FROM t1;
-  `
+  `,
   );
 }
 
@@ -364,7 +437,7 @@ async function test15(sqlite3, db) {
     `
     BEGIN;
     DELETE FROM t1;
-  `
+  `,
   );
   for (let i = 0; i < 12000; ++i) {
     const n = Math.floor(Math.random() * 100000);
@@ -372,14 +445,14 @@ async function test15(sqlite3, db) {
       db,
       `
       INSERT INTO t1 VALUES(${i + 1}, ${n}, '${numberName(n)}');
-    `
+    `,
     );
   }
   await sqlite3.exec(
     db,
     `
     COMMIT;
-  `
+  `,
   );
 }
 
@@ -391,60 +464,62 @@ async function test16(sqlite3, db) {
     DROP TABLE t1;
     DROP TABLE t2;
     DROP TABLE t3;
-  `
+  `,
   );
 }
 
 const digits = [
-  "",
-  "one",
-  "two",
-  "three",
-  "four",
-  "five",
-  "six",
-  "seven",
-  "eight",
-  "nine",
+  '',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
 ];
 const names100 = [
   ...digits,
   ...[
-    "ten",
-    "eleven",
-    "twelve",
-    "thirteen",
-    "fourteen",
-    "fifteen",
-    "sixteen",
-    "seventeen",
-    "eighteen",
-    "nineteen",
+    'ten',
+    'eleven',
+    'twelve',
+    'thirteen',
+    'fourteen',
+    'fifteen',
+    'sixteen',
+    'seventeen',
+    'eighteen',
+    'nineteen',
   ],
-  ...digits.map((digit) => `twenty${digit && "-" + digit}`),
-  ...digits.map((digit) => `thirty${digit && "-" + digit}`),
-  ...digits.map((digit) => `forty${digit && "-" + digit}`),
-  ...digits.map((digit) => `fifty${digit && "-" + digit}`),
-  ...digits.map((digit) => `sixty${digit && "-" + digit}`),
-  ...digits.map((digit) => `seventy${digit && "-" + digit}`),
-  ...digits.map((digit) => `eighty${digit && "-" + digit}`),
-  ...digits.map((digit) => `ninety${digit && "-" + digit}`),
+  ...digits.map((digit) => `twenty${digit && `-${digit}`}`),
+  ...digits.map((digit) => `thirty${digit && `-${digit}`}`),
+  ...digits.map((digit) => `forty${digit && `-${digit}`}`),
+  ...digits.map((digit) => `fifty${digit && `-${digit}`}`),
+  ...digits.map((digit) => `sixty${digit && `-${digit}`}`),
+  ...digits.map((digit) => `seventy${digit && `-${digit}`}`),
+  ...digits.map((digit) => `eighty${digit && `-${digit}`}`),
+  ...digits.map((digit) => `ninety${digit && `-${digit}`}`),
 ];
 function numberName(n) {
-  if (n === 0) return "zero";
+  if (n === 0) {
+    return 'zero';
+  }
 
   const name = [];
   const d43 = Math.floor(n / 1000);
   if (d43) {
     name.push(names100[d43]);
-    name.push("thousand");
+    name.push('thousand');
     n -= d43 * 1000;
   }
 
   const d2 = Math.floor(n / 100);
   if (d2) {
     name.push(names100[d2]);
-    name.push("hundred");
+    name.push('hundred');
     n -= d2 * 100;
   }
 
@@ -453,5 +528,5 @@ function numberName(n) {
     name.push(names100[d10]);
   }
 
-  return name.join(" ");
+  return name.join(' ');
 }

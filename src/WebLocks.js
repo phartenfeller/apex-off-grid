@@ -60,7 +60,7 @@ export class WebLocksBase {
   }
 
   async #lock(targetState) {
-    if (targetState === this.#state) return VFS.SQLITE_OK;
+    if (targetState === this.#state) { return VFS.SQLITE_OK; }
     switch (this.#state) {
       case VFS.SQLITE_LOCK_NONE:
         switch (targetState) {
@@ -102,7 +102,7 @@ export class WebLocksBase {
   }
 
   async #unlock(targetState) {
-    if (targetState === this.#state) return VFS.SQLITE_OK;
+    if (targetState === this.#state) { return VFS.SQLITE_OK; }
     switch (this.#state) {
       case VFS.SQLITE_LOCK_EXCLUSIVE:
         switch (targetState) {
@@ -227,7 +227,7 @@ export class WebLocksExclusive extends WebLocksBase {
    */
   constructor(name) {
     super();
-    this._lockName = name + "-outer";
+    this._lockName = `${name}-outer`;
   }
 
   async _NONEtoSHARED() {
@@ -250,8 +250,8 @@ export class WebLocksShared extends WebLocksBase {
    */
   constructor(name) {
     super();
-    this._outerName = name + "-outer";
-    this._innerName = name + "-inner";
+    this._outerName = `${name}-outer`;
+    this._innerName = `${name}-inner`;
   }
 
   async _NONEtoSHARED() {
@@ -274,7 +274,7 @@ export class WebLocksShared extends WebLocksBase {
         mode: "exclusive",
         ifAvailable: true,
       });
-      if (isLocked) break;
+      if (isLocked) { break; }
 
       if (await this._isReserved()) {
         // Someone else has a reserved lock so retry cannot succeed.

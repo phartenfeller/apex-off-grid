@@ -1,7 +1,7 @@
 // Copyright 2022 Roy T. Hashimoto. All Rights Reserved.
 // https://github.com/rhashimoto/wa-sqlite/blob/master/src/examples/OriginPrivateFileSystemVFS.js
-import * as VFS from "wa-sqlite/src/VFS.js";
-import { WebLocksExclusive as WebLocks } from "./WebLocks.js";
+import * as VFS from 'wa-sqlite/src/VFS.js';
+import { WebLocksExclusive as WebLocks } from './WebLocks.js';
 
 const BLOCK_SIZE = 4096;
 
@@ -32,7 +32,7 @@ export class OriginPrivateFileSystemVFS extends VFS.Base {
   /** @type {Map<number, OpenedFileEntry>} */ #mapIdToFile = new Map();
 
   get name() {
-    return "opfs";
+    return 'opfs';
   }
 
   async close() {
@@ -43,16 +43,18 @@ export class OriginPrivateFileSystemVFS extends VFS.Base {
 
   xOpen(name, fileId, flags, pOutFlags) {
     return this.handleAsync(async () => {
-      if (name === null) name = `null_${fileId}`;
+      if (name === null) {
+        name = `null_${fileId}`;
+      }
       log(`xOpen ${name} ${fileId} 0x${flags.toString(16)}`);
 
       try {
-        const url = new URL(name, "http://localhost/");
+        const url = new URL(name, 'http://localhost/');
 
         const create = flags & VFS.SQLITE_OPEN_CREATE ? true : false;
         const [directoryHandle, filename] = await this.#getPathComponents(
           url,
-          create
+          create,
         );
         const fileHandle = await directoryHandle.getFileHandle(filename, {
           create,
@@ -69,8 +71,8 @@ export class OriginPrivateFileSystemVFS extends VFS.Base {
 
         if (
           !(flags & VFS.SQLITE_OPEN_MAIN_DB) ||
-          url.searchParams.has("immutable") ||
-          url.searchParams.has("nolock")
+          url.searchParams.has('immutable') ||
+          url.searchParams.has('nolock')
         ) {
           // Get an access handle for files that SQLite does not lock.
           await this.#getAccessHandle(fileEntry);
@@ -96,7 +98,7 @@ export class OriginPrivateFileSystemVFS extends VFS.Base {
         if (fileEntry.flags & VFS.SQLITE_OPEN_DELETEONCLOSE) {
           const [directoryHandle, filename] = await this.#getPathComponents(
             fileEntry.filename,
-            false
+            false,
           );
           directoryHandle.removeEntry(filename);
         }
@@ -111,7 +113,7 @@ export class OriginPrivateFileSystemVFS extends VFS.Base {
       log(`xRead ${fileEntry?.filename} ${pData?.size} ${iOffset}`);
 
       if (!fileEntry) {
-        console.log("xRead: no file entry");
+        console.log('xRead: no file entry');
         return VFS.SQLITE_IOERR;
       }
 
@@ -208,13 +210,13 @@ export class OriginPrivateFileSystemVFS extends VFS.Base {
     });
   }
 
-  xSectorSize(fileId) {
-    log("xSectorSize", BLOCK_SIZE);
+  xSectorSize(_fileId) {
+    log('xSectorSize', BLOCK_SIZE);
     return BLOCK_SIZE;
   }
 
-  xDeviceCharacteristics(fileId) {
-    log("xDeviceCharacteristics");
+  xDeviceCharacteristics(_fileId) {
+    log('xDeviceCharacteristics');
     return (
       VFS.SQLITE_IOCAP_SAFE_APPEND |
       VFS.SQLITE_IOCAP_SEQUENTIAL |
@@ -228,11 +230,11 @@ export class OriginPrivateFileSystemVFS extends VFS.Base {
       try {
         const [directoryHandle, filename] = await this.#getPathComponents(
           name,
-          false
+          false,
         );
         await directoryHandle.getFileHandle(filename);
         pResOut.set(1);
-      } catch (e) {
+      } catch (_e) {
         pResOut.set(0);
       }
       return VFS.SQLITE_OK;
@@ -244,7 +246,7 @@ export class OriginPrivateFileSystemVFS extends VFS.Base {
       log(`xDelete ${name} ${syncDir}`);
       const [directoryHandle, filename] = await this.#getPathComponents(
         name,
-        false
+        false,
       );
       if (syncDir) {
         await directoryHandle.removeEntry(filename);
@@ -262,19 +264,19 @@ export class OriginPrivateFileSystemVFS extends VFS.Base {
    */
   async #getPathComponents(nameOrURL, create) {
     const url =
-      typeof nameOrURL === "string"
-        ? new URL(nameOrURL, "file://localhost/")
+      typeof nameOrURL === 'string'
+        ? new URL(nameOrURL, 'file://localhost/')
         : nameOrURL;
     const [_, directories, filename] = url.pathname.match(/[/]?(.*)[/](.*)$/);
 
     let directoryHandle = DIRECTORY_CACHE.get(directories);
     if (!directoryHandle) {
       directoryHandle = this.#root ?? (await this.#rootReady);
-      for (const directory of directories.split("/")) {
+      for (const directory of directories.split('/')) {
         if (directory) {
           directoryHandle = await directoryHandle.getDirectoryHandle(
             directory,
-            { create }
+            { create },
           );
         }
       }

@@ -15,7 +15,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
           );
     end if;
 
-    l_return.javascript_function := 'function() { setTimeout(() => window.hartenfeller_dev.plugins.sync_offline_data.sync({'|| 
+    l_return.javascript_function := 'function() { setTimeout(() => window.hartenfeller_dev.plugins.sync_offline_data.init({'|| 
                                   apex_javascript.add_attribute( p_name => 'ajaxId', p_value => apex_plugin.get_ajax_identifier ) ||
                                   '}), 5 * 1000)  }';
 

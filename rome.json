@@ -8,8 +8,7 @@
         "noUnusedVariables": "warn"
       },
       "nursery": {
-        "recommended": true,
-        "useConst": true
+        "recommended": true
       }
     }
   },
