@@ -1,5 +1,15 @@
+// @ts-ignore
 import Worker from 'worker-loader!./opfs-worker.js';
-import { ajax } from './apex/ajax.js';
+import { ajax } from './apex/ajax';
+
+declare global {
+  interface Window {
+      apex: any;
+      hartenfeller_dev: any;
+  }
+}
+
+const apex = window.apex;
 
 const preamble = `-- Pre-run setup
 PRAGMA journal_mode=delete;`;
@@ -13,14 +23,8 @@ worker.addEventListener(
   { once: true },
 );
 
-async function runBench() {
-  for await (const result of benchmark()) {
-    const res = `${result / 1000} s`;
-    console.log('res', res);
-  }
-}
 
-async function init({ ajaxId, storageId, storageVersion }) {
+async function init({ ajaxId, storageId, storageVersion }: { ajaxId: string; storageId: string; storageVersion: number }) {
   apex.debug.info('init', { ajaxId, storageId, storageVersion });
 
   await request({
@@ -63,12 +67,12 @@ async function* benchmark() {
   await request({ f: 'finalize' });
 }
 
-function request(message) {
+function request(message: any) {
   worker.postMessage(message);
   return new Promise(function (resolve) {
     worker.addEventListener(
       'message',
-      function ({ data }) {
+      function ({ data }: { data: any }) {
         resolve(data);
       },
       { once: true },
@@ -91,5 +95,4 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
   window.hartenfeller_dev.plugins.sync_offline_data.queryData = queryData;
   window.hartenfeller_dev.plugins.sync_offline_data.persist = persist;
 
-  window.hartenfeller_dev.plugins.sync_offline_data.sync = runBench;
 }

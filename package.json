@@ -11,7 +11,9 @@
   },
   "devDependencies": {
     "rome": "^10.0.1",
-    "terser-webpack-plugin": "^5.3.6"
+    "terser-webpack-plugin": "^5.3.6",
+    "ts-loader": "^9.4.1",
+    "typescript": "4.6"
   },
   "dependencies": {
     "html-webpack-plugin": "^5.5.0",
