@@ -7,7 +7,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
   , is_required     boolean
   );
 
-  type tt_sqlite_col_info is table of t_sqlite_col_info;
+  type tt_sqlite_col_info is table of t_sqlite_col_info index by pls_integer;
 
 
  function render_da( 
@@ -67,7 +67,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
     l_col_info          apex_exec.t_column;
 
     l_sqlite_col_info   t_sqlite_col_info;
-    l_sqlite_col_info_t tt_sqlite_col_info;
+    l_sqlite_col_info_t tt_sqlite_col_info := tt_sqlite_col_info();
   begin
       l_context :=
         apex_exec.open_query_context
@@ -86,8 +86,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
       l_sqlite_col_info.datatype_length := l_col_info.data_type_length;
       l_sqlite_col_info.is_required := l_col_info.is_required;
 
-      l_sqlite_col_info_t.extend;
-      l_sqlite_col_info_t(l_sqlite_col_info_t.last) := l_sqlite_col_info;
+      l_sqlite_col_info_t(i) := l_sqlite_col_info;
     end loop;
 
     apex_exec.close(l_context);
@@ -107,6 +106,8 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
   ) 
     return apex_plugin.t_dynamic_action_ajax_result
   as
+    l_return apex_plugin.t_dynamic_action_ajax_result;
+
     l_source_query p_dynamic_action.attribute_01%type := p_dynamic_action.attribute_01;
     l_storage_id   p_dynamic_action.attribute_03%type := p_dynamic_action.attribute_03;
 
@@ -129,7 +130,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
       when 'source_structure' then
         l_sqlite_col_info_t := get_source_structure( l_source_query );
 
-        apex_json.open_array('source_structure'); -- [
+        apex_json.open_array('source_structure'); -- "source_structure": [
 
         for i in 1 .. l_sqlite_col_info_t.count
         loop
@@ -147,8 +148,9 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
         apex_debug.error( apex_string.format('Unknown method => %0', l_method ) );
     end case;
 
-    apex_json.open_object; -- }
+    apex_json.close_object; -- }
 
+    return l_return;
   exception
     when others then
       apex_debug.error( apex_string.format('Error in Offline Sync Plugin (%0): %1', l_storage_id, sqlerrm) );
