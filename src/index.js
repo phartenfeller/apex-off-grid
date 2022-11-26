@@ -1,4 +1,5 @@
 import Worker from 'worker-loader!./opfs-worker.js';
+import { ajax } from './apex/ajax.js';
 
 const preamble = `-- Pre-run setup
 PRAGMA journal_mode=delete;`;
@@ -19,11 +20,15 @@ async function runBench() {
   }
 }
 
-async function init() {
+async function init({ ajaxId, storageId, storageVersion }) {
+  apex.debug.info('init', { ajaxId, storageId, storageVersion });
+
   await request({
     f: 'initialize',
     preamble: preamble,
   });
+
+  await ajax({ apex, ajaxId, method: 'source_structure' });
 }
 
 async function createTable() {

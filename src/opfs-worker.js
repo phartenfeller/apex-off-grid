@@ -75,7 +75,7 @@ let db;
 })();
 
 async function initialize(preamble) {
-  await clearFilesystem();
+  // await clearFilesystem();
 
   db = await sqlite3.open_v2(
     DB_NAME,
