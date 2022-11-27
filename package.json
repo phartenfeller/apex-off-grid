@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npx webpack-cli serve --mode=development --config webpack.dev.js",
     "serve": "npx webpack-cli serve --mode=development",
-    "build": "npx webpack-cli --mode=production --config webpack.prod.js",
+    "build": "npx webpack-cli --mode=production --config webpack.prod.js --stats-children",
     "build-demo": "npx webpack-cli --mode=production --config webpack.prod-demo.js"
   },
   "devDependencies": {

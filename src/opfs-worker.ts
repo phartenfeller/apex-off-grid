@@ -1,53 +1,37 @@
-import * as SQLite from 'wa-sqlite';
-import SQLiteModuleFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
-import { OriginPrivateFileSystemVFS } from '../src/PrivateFileSystemVFS.js';
+import { initDb } from './db/initDb';
+import { initTables } from './db/userTables';
+import { WorkerMessageParams, WorkerMessageType } from './globalConstants';
 
-console.log('worker loaded');
+function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
+  postMessage({ messageType, data });
+}
 
-const DB_NAME = 'file:///benchmark?foo=bar';
-const TESTS = [
-  test1,
-  test2,
-  test3,
-  test4,
-  test5,
-  test6,
-  test7,
-  test8,
-  test9,
-  test10,
-  test11,
-  test12,
-  test13,
-  test14,
-  test15,
-  test16,
-];
-
-let sqlite3;
-let db;
 (async function () {
-  const mod = await SQLiteModuleFactory();
-  sqlite3 = SQLite.Factory(mod);
-  // @ts-ignore
-  sqlite3.vfs_register(new OriginPrivateFileSystemVFS(), true);
+  addEventListener(
+    'message',
+    async function ({ data }: { data: WorkerMessageParams }) {
+      let result: any;
+      switch (data.messageType) {
+        case WorkerMessageType.InitDb: {
+          const data = await initDb();
 
-  addEventListener('message', async function ({ data }) {
-    let result;
-    switch (data?.f) {
-      case 'initialize': {
-        result = await initialize(data.preamble);
-        break;
-      }
+          if (data.ok) {
+            await initTables();
+          }
+
+          result = { messageType: WorkerMessageType.InitDbResult, data };
+          break;
+        }
+        /*
       case 'create_table': {
         const start = Date.now();
-        await createTable(sqlite3, db);
+        await createTable();
         result = Date.now() - start;
         break;
       }
       case 'query_data': {
         const start = Date.now();
-        const data = await queryTable(sqlite3, db);
+        const data = await queryTable();
         console.log('data', data);
         result = Date.now() - start;
         break;
@@ -56,41 +40,29 @@ let db;
         persist();
         break;
       }
-      case 'test': {
-        const start = Date.now();
-        await TESTS[data.i](sqlite3, db);
-        result = Date.now() - start;
-        break;
-      }
       case 'finalize': {
         result = await finalize();
         break;
       }
-      default:
-        console.error(`unrecognized request '${data?.f}'`);
-    }
-    postMessage(result);
-  });
-  postMessage(null);
+      */
+        default:
+          console.error(`unrecognized request: "${data?.messageType}"`);
+      }
+      sendMsgToMain(result);
+    },
+  );
+
+  console.log('worker loaded');
+  console.log('worker window', self.window);
+  sendMsgToMain({ messageType: WorkerMessageType.Loaded });
 })();
 
-async function initialize(preamble) {
-  // await clearFilesystem();
-
-  db = await sqlite3.open_v2(
-    DB_NAME,
-    SQLite.SQLITE_OPEN_CREATE |
-      SQLite.SQLITE_OPEN_READWRITE |
-      SQLite.SQLITE_OPEN_URI,
-    'opfs',
-  );
-  await sqlite3.exec(db, preamble);
-}
-
+/*
 async function finalize() {
   await sqlite3.close(db);
   await clearFilesystem();
 }
+
 
 async function clearFilesystem() {
   const rootDir = await navigator.storage.getDirectory();
@@ -101,7 +73,7 @@ async function clearFilesystem() {
   }
 }
 
-async function createTable(sqlite3, db) {
+async function createTable() {
   console.log('createTable');
   await sqlite3.exec(
     db,
@@ -127,9 +99,9 @@ async function createTable(sqlite3, db) {
   );
 }
 
-function queryTable(sqlite3, db) {
+function queryTable() {
   console.log('queryTable');
-  let data = [];
+  let data: any[] = [];
   return new Promise((resolve, reject) => {
     try {
       sqlite3.exec(
@@ -150,7 +122,7 @@ function queryTable(sqlite3, db) {
 }
 
 // Test 1: 1000 INSERTs
-async function test1(sqlite3, db) {
+async function test1() {
   console.log('test1');
   await sqlite3.exec(
     db,
@@ -176,7 +148,7 @@ async function persist() {
 }
 
 // Test 2: 25000 INSERTs in a transaction
-async function test2(sqlite3, db) {
+async function test2() {
   await sqlite3.exec(
     db,
     `
@@ -202,7 +174,7 @@ async function test2(sqlite3, db) {
 }
 
 // Test 3: 25000 INSERTs into an indexed table
-async function test3(sqlite3, db) {
+async function test3() {
   await sqlite3.exec(
     db,
     `
@@ -229,7 +201,7 @@ async function test3(sqlite3, db) {
 }
 
 // Test 4: 100 SELECTs without an index
-async function test4(sqlite3, db) {
+async function test4() {
   await sqlite3.exec(
     db,
     `
@@ -255,7 +227,7 @@ async function test4(sqlite3, db) {
 }
 
 // Test 5: 100 SELECTs on a string comparison
-async function test5(sqlite3, db) {
+async function test5() {
   await sqlite3.exec(
     db,
     `
@@ -279,7 +251,7 @@ async function test5(sqlite3, db) {
 }
 
 // Test 6: Creating an index
-async function test6(sqlite3, db) {
+async function test6() {
   await sqlite3.exec(
     db,
     `
@@ -290,7 +262,7 @@ async function test6(sqlite3, db) {
 }
 
 // Test 7: 5000 SELECTs with an index
-async function test7(sqlite3, db) {
+async function test7() {
   await sqlite3.exec(
     db,
     `
@@ -314,7 +286,7 @@ async function test7(sqlite3, db) {
 }
 
 // Test 8: 1000 UPDATEs without an index
-async function test8(sqlite3, db) {
+async function test8() {
   await sqlite3.exec(
     db,
     `
@@ -338,7 +310,7 @@ async function test8(sqlite3, db) {
 }
 
 // Test 9: 25000 UPDATEs with an index
-async function test9(sqlite3, db) {
+async function test9() {
   await sqlite3.exec(
     db,
     `
@@ -363,7 +335,7 @@ async function test9(sqlite3, db) {
 }
 
 // Test 10: 25000 text UPDATEs with an index
-async function test10(sqlite3, db) {
+async function test10() {
   await sqlite3.exec(
     db,
     `
@@ -388,7 +360,7 @@ async function test10(sqlite3, db) {
 }
 
 // Test 11: INSERTs from a SELECT
-async function test11(sqlite3, db) {
+async function test11() {
   await sqlite3.exec(
     db,
     `
@@ -401,7 +373,7 @@ async function test11(sqlite3, db) {
 }
 
 // Test 12: DELETE without an index
-async function test12(sqlite3, db) {
+async function test12() {
   await sqlite3.exec(
     db,
     `
@@ -411,7 +383,7 @@ async function test12(sqlite3, db) {
 }
 
 // Test 13: DELETE with an index
-async function test13(sqlite3, db) {
+async function test13() {
   await sqlite3.exec(
     db,
     `
@@ -421,7 +393,7 @@ async function test13(sqlite3, db) {
 }
 
 // Test 14: A big INSERT after a big DELETE
-async function test14(sqlite3, db) {
+async function test14() {
   await sqlite3.exec(
     db,
     `
@@ -431,7 +403,7 @@ async function test14(sqlite3, db) {
 }
 
 // Test 15: A big DELETE followed by many small INSERTs
-async function test15(sqlite3, db) {
+async function test15() {
   await sqlite3.exec(
     db,
     `
@@ -457,7 +429,7 @@ async function test15(sqlite3, db) {
 }
 
 // Test 16: DROP TABLE
-async function test16(sqlite3, db) {
+async function test16() {
   await sqlite3.exec(
     db,
     `
@@ -503,7 +475,7 @@ const names100 = [
   ...digits.map((digit) => `eighty${digit && `-${digit}`}`),
   ...digits.map((digit) => `ninety${digit && `-${digit}`}`),
 ];
-function numberName(n) {
+function numberName(n: number) {
   if (n === 0) {
     return 'zero';
   }
@@ -530,3 +502,4 @@ function numberName(n) {
 
   return name.join(' ');
 }
+*/

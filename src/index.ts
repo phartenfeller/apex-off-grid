@@ -1,40 +1,105 @@
 // @ts-ignore
-import Worker from 'worker-loader!./opfs-worker.js';
+import Worker from 'worker-loader!./opfs-worker.ts';
 import { ajax } from './apex/ajax';
+import {
+  DbStatus,
+  InitDbMsgData,
+  WorkerMessageParams,
+  WorkerMessageType,
+} from './globalConstants';
 
 declare global {
   interface Window {
-      apex: any;
-      hartenfeller_dev: any;
+    apex: any;
+    hartenfeller_dev: any;
   }
 }
 
 const apex = window.apex;
 
-const preamble = `-- Pre-run setup
-PRAGMA journal_mode=delete;`;
-
 const worker = new Worker();
+
+function sendMsgToWorker({
+  messageType,
+  data,
+}: WorkerMessageParams): Promise<WorkerMessageParams> {
+  worker.postMessage({ messageType, data });
+  return new Promise((resolve) => {
+    worker.addEventListener(
+      'message',
+      ({ data }: { data: WorkerMessageParams }) => {
+        apex.debug.info(
+          `Message received from Worker: ${data.messageType}`,
+          data.data,
+        );
+
+        resolve(data);
+      },
+      { once: true },
+    );
+  });
+}
+
+async function initDb() {
+  if (
+    window.hartenfeller_dev.plugins.sync_offline_data.dbStauts !==
+    DbStatus.NotInitialized
+  ) {
+    // already initialized (maybe by another plugin instance)
+    return;
+  }
+  window.hartenfeller_dev.plugins.sync_offline_data.dbStauts =
+    DbStatus.Initializing;
+
+  const { messageType, data } = await sendMsgToWorker({
+    messageType: WorkerMessageType.InitDb,
+  });
+
+  if (messageType !== WorkerMessageType.InitDbResult) {
+    apex.debug.error(`Unexpected message type: ${messageType}`);
+    return;
+  }
+
+  apex.debug.info('initDb result', data);
+  const { ok, error } = data as InitDbMsgData;
+
+  if (ok) {
+    window.hartenfeller_dev.plugins.sync_offline_data.dbStauts =
+      DbStatus.Initialized;
+  } else {
+    window.hartenfeller_dev.plugins.sync_offline_data.dbStauts = DbStatus.Error;
+    apex.debug.error(`Could not initialize DB: ${error}`);
+  }
+}
+
 worker.addEventListener(
   'message',
-  function () {
-    console.log('message received');
+  async ({ data }: { data: WorkerMessageParams }) => {
+    apex.debug.info(`Message received from Worker: ${data.messageType}`, data);
+
+    if (data.messageType === WorkerMessageType.Loaded) {
+      apex.debug.info('Worker loaded');
+      initDb();
+    } else {
+      apex.debug.error(
+        `Excpected message type ${WorkerMessageType.Loaded} but got: ${data.messageType}`,
+      );
+    }
   },
   { once: true },
 );
 
-
-async function init({ ajaxId, storageId, storageVersion }: { ajaxId: string; storageId: string; storageVersion: number }) {
+async function init({
+  ajaxId,
+  storageId,
+  storageVersion,
+}: { ajaxId: string; storageId: string; storageVersion: number }) {
   apex.debug.info('init', { ajaxId, storageId, storageVersion });
-
-  await request({
-    f: 'initialize',
-    preamble: preamble,
-  });
 
   await ajax({ apex, ajaxId, method: 'source_structure' });
 }
 
+/*
 async function createTable() {
   await request({
     f: 'create_table',
@@ -52,33 +117,7 @@ async function persist() {
     f: 'persist',
   });
 }
-
-async function* benchmark() {
-  await request({
-    f: 'initialize',
-    preamble: preamble,
-  });
-
-  for (let i = 0; i < 16; ++i) {
-    const result = await request({ f: 'test', i });
-    yield result;
-  }
-
-  await request({ f: 'finalize' });
-}
-
-function request(message: any) {
-  worker.postMessage(message);
-  return new Promise(function (resolve) {
-    worker.addEventListener(
-      'message',
-      function ({ data }: { data: any }) {
-        resolve(data);
-      },
-      { once: true },
-    );
-  });
-}
+*/
 
 if (!window.hartenfeller_dev) {
   window.hartenfeller_dev = {};
@@ -91,8 +130,12 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data) {
 }
 if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
   window.hartenfeller_dev.plugins.sync_offline_data.init = init;
+  /*
   window.hartenfeller_dev.plugins.sync_offline_data.createTable = createTable;
   window.hartenfeller_dev.plugins.sync_offline_data.queryData = queryData;
   window.hartenfeller_dev.plugins.sync_offline_data.persist = persist;
+  */
 
+  window.hartenfeller_dev.plugins.sync_offline_data.dbStauts =
+    DbStatus.NotInitialized;
 }
