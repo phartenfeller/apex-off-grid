@@ -1,6 +1,6 @@
 import { initDb } from './db/initDb';
 import { initTables } from './db/userTables';
-import { WorkerMessageParams, WorkerMessageType } from './globalConstants';
+import { WorkerMessageParams, WorkerMessageType } from '../globalConstants';
 
 function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
   postMessage({ messageType, data });

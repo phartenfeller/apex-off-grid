@@ -1,5 +1,5 @@
 // @ts-ignore
-import Worker from 'worker-loader!./opfs-worker.ts';
+import Worker from 'worker-loader!./worker/opfs-worker.ts';
 import { ajax } from './apex/ajax';
 import {
   DbStatus,
