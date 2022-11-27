@@ -18,8 +18,10 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
   as
     l_return apex_plugin.t_dynamic_action_render_result;
 
-    l_storage_id      p_dynamic_action.attribute_03%type := p_dynamic_action.attribute_03;
-    l_storage_version p_dynamic_action.attribute_02%type := p_dynamic_action.attribute_02;
+    l_storage_id           p_dynamic_action.attribute_03%type := p_dynamic_action.attribute_03;
+    l_storage_version      p_dynamic_action.attribute_02%type := p_dynamic_action.attribute_02;
+    l_pk_colname           p_dynamic_action.attribute_04%type := p_dynamic_action.attribute_04;
+    l_last_changed_colname p_dynamic_action.attribute_05%type := p_dynamic_action.attribute_05;
   begin
     if apex_application.g_debug then
         apex_plugin_util.debug_dynamic_action
@@ -32,6 +34,8 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
                                   apex_javascript.add_attribute( p_name => 'ajaxId', p_value => apex_plugin.get_ajax_identifier ) ||
                                   apex_javascript.add_attribute( p_name => 'storageId', p_value => l_storage_id ) ||
                                   apex_javascript.add_attribute( p_name => 'storageVersion', p_value => l_storage_version ) ||
+                                  apex_javascript.add_attribute( p_name => 'pkColname', p_value => l_pk_colname ) ||
+                                  apex_javascript.add_attribute( p_name => 'lastChangedColname', p_value => l_last_changed_colname ) ||
                                   '}), 1000)  }';
 
     apex_debug.message('render');

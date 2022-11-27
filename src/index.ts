@@ -100,7 +100,15 @@ async function initStorage({
   ajaxId,
   storageId,
   storageVersion,
-}: { ajaxId: string; storageId: string; storageVersion: number }) {
+  pkColname,
+  lastChangedColname,
+}: {
+  ajaxId: string;
+  storageId: string;
+  storageVersion: number;
+  pkColname: string;
+  lastChangedColname: string;
+}) {
   if (
     window.hartenfeller_dev.plugins.sync_offline_data.dbStauts !==
     DbStatus.Initialized
@@ -108,7 +116,14 @@ async function initStorage({
     if (initRetries < 20) {
       initRetries++;
       setTimeout(
-        () => initStorage({ ajaxId, storageId, storageVersion }),
+        () =>
+          initStorage({
+            ajaxId,
+            storageId,
+            storageVersion,
+            pkColname,
+            lastChangedColname,
+          }),
         1000,
       );
     } else {
@@ -120,7 +135,13 @@ async function initStorage({
     return;
   }
 
-  apex.debug.info('initStorage', { ajaxId, storageId, storageVersion });
+  apex.debug.info('initStorage', {
+    ajaxId,
+    storageId,
+    storageVersion,
+    pkColname,
+    lastChangedColname,
+  });
 
   const res = (await ajax({ apex, ajaxId, method: 'source_structure' })) as any;
 
@@ -131,7 +152,13 @@ async function initStorage({
 
   const colData: Colinfo[] = res.source_structure;
 
-  const payload: InitSourceMsgData = { storageId, storageVersion, colData };
+  const payload: InitSourceMsgData = {
+    storageId,
+    storageVersion,
+    colData,
+    pkColname,
+    lastChangedColname,
+  };
 
   await sendMsgToWorker({
     messageType: WorkerMessageType.InitSource,

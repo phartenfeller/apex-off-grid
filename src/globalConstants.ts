@@ -25,6 +25,8 @@ export type InitSourceMsgData = {
   storageId: string;
   storageVersion: number;
   colData: Colinfo[];
+  pkColname: string;
+  lastChangedColname: string;
 };
 
 export enum DbStatus {
