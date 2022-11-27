@@ -1,8 +1,8 @@
 import * as SQLite from 'wa-sqlite';
 import SQLiteModuleFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
-import { InitDbMsgData } from '../../globalConstants.js';
-import { OriginPrivateFileSystemVFS } from '../PrivateFileSystemVFS.js';
-import { log } from '../util/logger.js';
+import { InitDbMsgData } from '../../globalConstants';
+import { OriginPrivateFileSystemVFS } from './util/PrivateFileSystemVFS.js';
+import { log } from '../util/logger';
 
 const DB_NAME = 'file:///hartenfeller_dev_apex_offline_data.sqlite';
 const PREAMBLE = `-- Pre-run setup

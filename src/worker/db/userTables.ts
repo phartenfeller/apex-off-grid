@@ -1,3 +1,4 @@
+import { InitSourceMsgData } from '../../globalConstants';
 import { log } from '../util/logger';
 import { db, sqlite3 } from './initDb';
 import { Colinfo } from './types';
@@ -11,8 +12,6 @@ async function checkTableExists(tabname: string) {
   log.trace('checkTableExists sql:', sql);
 
   let result: boolean;
-
-  sqlite3.bind;
 
   await sqlite3.exec(db, sql, (row, columns) => {
     const data = rowToObject(row, columns);
@@ -49,14 +48,14 @@ export async function initTables() {
 function generateTableSource(
   storageId: string,
   storageVersion: number,
-  colInfo: Colinfo[],
+  colData: Colinfo[],
   pkCol: string,
 ) {
   let statement = `Create Table ${storageId}_v${storageVersion} (`;
 
   const atomics: string[] = [];
 
-  for (const col of colInfo) {
+  for (const col of colData) {
     atomics.push(
       `${col.colname} ${col.datatype}${
         col.datatypeLength ? `(${col.datatypeLength})` : ''
@@ -71,13 +70,18 @@ function generateTableSource(
   return statement;
 }
 
-export function initTable(storageId: string, storageVersion: number) {
+export async function initSource({
+  storageId,
+  storageVersion,
+  colData,
+}: InitSourceMsgData) {
   const tabname = `${storageId}_v${storageVersion}`;
 
-  const exists = checkTableExists(tabname);
+  const exists = await checkTableExists(tabname);
+  log.trace(`initSource: table exists "${tabname}" :`, exists);
 
   if (!exists) {
-    const sql = generateTableSource(storageId, storageVersion, [], 'id');
-    console.log(sql);
+    const sql = generateTableSource(storageId, storageVersion, colData, 'id');
+    log.trace('sql initSource:', sql);
   }
 }

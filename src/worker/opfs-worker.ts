@@ -1,7 +1,8 @@
 import { initDb } from './db/initDb';
-import { initTables } from './db/userTables';
+import { initSource, initTables } from './db/userTables';
 import {
   InitDbPayloadData,
+  InitSourceMsgData,
   WorkerMessageParams,
   WorkerMessageType,
 } from '../globalConstants';
@@ -15,7 +16,7 @@ function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
   addEventListener(
     'message',
     async function ({ data }: { data: WorkerMessageParams }) {
-      let result: any;
+      let result: WorkerMessageParams;
       switch (data.messageType) {
         case WorkerMessageType.InitDb: {
           const messageData = data.data as InitDbPayloadData;
@@ -28,6 +29,14 @@ function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
           }
 
           result = { messageType: WorkerMessageType.InitDbResult, data: res };
+          sendMsgToMain(result);
+          break;
+        }
+        case WorkerMessageType.InitSource: {
+          const messageData = data.data as InitSourceMsgData;
+
+          await initSource(messageData);
+
           break;
         }
         /*
@@ -56,7 +65,6 @@ function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
         default:
           console.error(`unrecognized request: "${data?.messageType}"`);
       }
-      sendMsgToMain(result);
     },
   );
 

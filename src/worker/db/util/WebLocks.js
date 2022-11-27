@@ -1,6 +1,6 @@
 // Copyright 2022 Roy T. Hashimoto. All Rights Reserved.
 // https://github.com/rhashimoto/wa-sqlite/blob/master/src/examples/WebLocks.js
-import * as VFS from "wa-sqlite/src/VFS.js";
+import * as VFS from 'wa-sqlite/src/VFS.js';
 
 const LOCK_TYPE_MASK =
   VFS.SQLITE_LOCK_NONE |
@@ -51,7 +51,7 @@ export class WebLocksBase {
       this.#state = targetState;
       return VFS.SQLITE_OK;
     } catch (e) {
-      if (e.name === "AbortError") {
+      if (e.name === 'AbortError') {
         return VFS.SQLITE_BUSY;
       }
       console.error(e);
@@ -60,7 +60,9 @@ export class WebLocksBase {
   }
 
   async #lock(targetState) {
-    if (targetState === this.#state) { return VFS.SQLITE_OK; }
+    if (targetState === this.#state) {
+      return VFS.SQLITE_OK;
+    }
     switch (this.#state) {
       case VFS.SQLITE_LOCK_NONE:
         switch (targetState) {
@@ -68,7 +70,7 @@ export class WebLocksBase {
             return this._NONEtoSHARED();
           default:
             throw new Error(
-              `unexpected transition ${this.#state} -> ${targetState}`
+              `unexpected transition ${this.#state} -> ${targetState}`,
             );
         }
 
@@ -80,7 +82,7 @@ export class WebLocksBase {
             return this._SHAREDtoEXCLUSIVE();
           default:
             throw new Error(
-              `unexpected transition ${this.#state} -> ${targetState}`
+              `unexpected transition ${this.#state} -> ${targetState}`,
             );
         }
 
@@ -90,19 +92,21 @@ export class WebLocksBase {
             return this._RESERVEDtoEXCLUSIVE();
           default:
             throw new Error(
-              `unexpected transition ${this.#state} -> ${targetState}`
+              `unexpected transition ${this.#state} -> ${targetState}`,
             );
         }
 
       default:
         throw new Error(
-          `unexpected transition ${this.#state} -> ${targetState}`
+          `unexpected transition ${this.#state} -> ${targetState}`,
         );
     }
   }
 
   async #unlock(targetState) {
-    if (targetState === this.#state) { return VFS.SQLITE_OK; }
+    if (targetState === this.#state) {
+      return VFS.SQLITE_OK;
+    }
     switch (this.#state) {
       case VFS.SQLITE_LOCK_EXCLUSIVE:
         switch (targetState) {
@@ -112,7 +116,7 @@ export class WebLocksBase {
             return this._EXCLUSIVEtoNONE();
           default:
             throw new Error(
-              `unexpected transition ${this.#state} -> ${targetState}`
+              `unexpected transition ${this.#state} -> ${targetState}`,
             );
         }
 
@@ -124,7 +128,7 @@ export class WebLocksBase {
             return this._RESERVEDtoNONE();
           default:
             throw new Error(
-              `unexpected transition ${this.#state} -> ${targetState}`
+              `unexpected transition ${this.#state} -> ${targetState}`,
             );
         }
 
@@ -134,13 +138,13 @@ export class WebLocksBase {
             return this._SHAREDtoNONE();
           default:
             throw new Error(
-              `unexpected transition ${this.#state} -> ${targetState}`
+              `unexpected transition ${this.#state} -> ${targetState}`,
             );
         }
 
       default:
         throw new Error(
-          `unexpected transition ${this.#state} -> ${targetState}`
+          `unexpected transition ${this.#state} -> ${targetState}`,
         );
     }
   }
@@ -190,7 +194,7 @@ export class WebLocksBase {
           resolve(lock);
           if (lock) {
             return new Promise((release) =>
-              this.#releasers.set(lockName, release)
+              this.#releasers.set(lockName, release),
             );
           }
         });
@@ -232,7 +236,7 @@ export class WebLocksExclusive extends WebLocksBase {
 
   async _NONEtoSHARED() {
     await this._acquireWebLock(this._lockName, {
-      mode: "exclusive",
+      mode: 'exclusive',
       signal: this._getTimeoutSignal(),
     });
   }
@@ -256,11 +260,11 @@ export class WebLocksShared extends WebLocksBase {
 
   async _NONEtoSHARED() {
     await this._acquireWebLock(this._outerName, {
-      mode: "shared",
+      mode: 'shared',
       signal: this._getTimeoutSignal(),
     });
     await this._acquireWebLock(this._innerName, {
-      mode: "shared",
+      mode: 'shared',
       signal: this._getTimeoutSignal(),
     });
     this._releaseWebLock(this._outerName);
@@ -271,14 +275,16 @@ export class WebLocksShared extends WebLocksBase {
     while (true) {
       // Attempt to get the outer lock without blocking.
       const isLocked = await this._acquireWebLock(this._outerName, {
-        mode: "exclusive",
+        mode: 'exclusive',
         ifAvailable: true,
       });
-      if (isLocked) { break; }
+      if (isLocked) {
+        break;
+      }
 
       if (await this._isReserved()) {
         // Someone else has a reserved lock so retry cannot succeed.
-        throw new DOMException("", "AbortError");
+        throw new DOMException('', 'AbortError');
       }
 
       await new Promise((resolve) => setTimeout(resolve, timeoutMillis));
@@ -289,7 +295,7 @@ export class WebLocksShared extends WebLocksBase {
 
   async _RESERVEDtoEXCLUSIVE() {
     await this._acquireWebLock(this._innerName, {
-      mode: "exclusive",
+      mode: 'exclusive',
       signal: this._getTimeoutSignal(),
     });
   }
@@ -299,7 +305,7 @@ export class WebLocksShared extends WebLocksBase {
   }
 
   async _RESERVEDtoSHARED() {
-    await this._acquireWebLock(this._innerName, { mode: "shared" });
+    await this._acquireWebLock(this._innerName, { mode: 'shared' });
     this._releaseWebLock(this._outerName);
   }
 
@@ -311,7 +317,7 @@ export class WebLocksShared extends WebLocksBase {
     const query = await navigator.locks.query();
     return (
       query.held.find(({ name }) => name === this._outerName)?.mode ===
-      "exclusive"
+      'exclusive'
     );
   }
 }

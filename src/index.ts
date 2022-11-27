@@ -5,9 +5,11 @@ import {
   DbStatus,
   InitDbMsgData,
   InitDbPayloadData,
+  InitSourceMsgData,
   WorkerMessageParams,
   WorkerMessageType,
 } from './globalConstants';
+import { Colinfo } from './worker/db/types';
 
 declare global {
   interface Window {
@@ -92,14 +94,49 @@ worker.addEventListener(
   { once: true },
 );
 
-async function init({
+let initRetries = 0;
+
+async function initStorage({
   ajaxId,
   storageId,
   storageVersion,
 }: { ajaxId: string; storageId: string; storageVersion: number }) {
-  apex.debug.info('init', { ajaxId, storageId, storageVersion });
+  if (
+    window.hartenfeller_dev.plugins.sync_offline_data.dbStauts !==
+    DbStatus.Initialized
+  ) {
+    if (initRetries < 20) {
+      initRetries++;
+      setTimeout(
+        () => initStorage({ ajaxId, storageId, storageVersion }),
+        1000,
+      );
+    } else {
+      apex.debug.error('Could not initialize DB. Message from:', {
+        storageId,
+        storageVersion,
+      });
+    }
+    return;
+  }
 
-  await ajax({ apex, ajaxId, method: 'source_structure' });
+  apex.debug.info('initStorage', { ajaxId, storageId, storageVersion });
+
+  const res = (await ajax({ apex, ajaxId, method: 'source_structure' })) as any;
+
+  if (!res?.source_structure) {
+    apex.debug.error('No source_structure in response', res);
+    return;
+  }
+
+  const colData: Colinfo[] = res.source_structure;
+
+  const payload: InitSourceMsgData = { storageId, storageVersion, colData };
+
+  await sendMsgToWorker({
+    messageType: WorkerMessageType.InitSource,
+    data: payload,
+  });
 }
 
 /*
@@ -132,7 +169,7 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data) {
   window.hartenfeller_dev.plugins.sync_offline_data = {};
 }
 if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
-  window.hartenfeller_dev.plugins.sync_offline_data.init = init;
+  window.hartenfeller_dev.plugins.sync_offline_data.initStorage = initStorage;
   /*
   window.hartenfeller_dev.plugins.sync_offline_data.createTable = createTable;
   window.hartenfeller_dev.plugins.sync_offline_data.queryData = queryData;
