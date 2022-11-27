@@ -4,11 +4,13 @@ import TerserPlugin from 'terser-webpack-plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const entry = path.resolve(__dirname, 'src', 'index.ts');
+const entryWorker = path.resolve(__dirname, 'src', 'worker', 'opfs-worker.ts');
 
 export default {
   entry: {
     index: entry,
     'index.min': entry,
+    'opfs-worker.min': entryWorker,
   },
 
   module: {
