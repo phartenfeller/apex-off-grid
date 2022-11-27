@@ -14,6 +14,10 @@ export type InitDbMsgData = {
   error?: string;
 };
 
+export type InitDbPayloadData = {
+  loglevel: number;
+};
+
 export enum DbStatus {
   NotInitialized = 'not_initialized',
   Initialized = 'initialized',

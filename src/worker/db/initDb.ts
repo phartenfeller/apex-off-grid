@@ -2,6 +2,7 @@ import * as SQLite from 'wa-sqlite';
 import SQLiteModuleFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
 import { InitDbMsgData } from '../../globalConstants.js';
 import { OriginPrivateFileSystemVFS } from '../PrivateFileSystemVFS.js';
+import { log } from '../util/logger.js';
 
 const DB_NAME = 'file:///hartenfeller_dev_apex_offline_data.sqlite';
 const PREAMBLE = `-- Pre-run setup
@@ -25,6 +26,7 @@ export async function initDb(): Promise<InitDbMsgData> {
       'opfs',
     );
     await sqlite3.exec(db, PREAMBLE);
+    log.info('Database succefully initialized!');
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e.message };

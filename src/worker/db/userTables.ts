@@ -1,3 +1,4 @@
+import { log } from '../util/logger';
 import { db, sqlite3 } from './initDb';
 import { Colinfo } from './types';
 import { rowToObject } from './util/rowToObject';
@@ -7,6 +8,7 @@ const META_TABLE = `_meta_v${META_TABLE_VERSION}`;
 
 async function checkTableExists(tabname: string) {
   const sql = `select count(*) as cnt from sqlite_master where type = 'table' and lower(name) = '${tabname.toLocaleLowerCase()}'`;
+  log.trace('checkTableExists sql:', sql);
 
   let result: boolean;
 
@@ -34,7 +36,7 @@ async function createMetaTable() {
   );`;
 
   await sqlite3.exec(db, sql);
-  console.log('created meta table');
+  log.info('created meta table');
 }
 
 export async function initTables() {

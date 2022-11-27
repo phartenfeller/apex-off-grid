@@ -4,6 +4,7 @@ import { ajax } from './apex/ajax';
 import {
   DbStatus,
   InitDbMsgData,
+  InitDbPayloadData,
   WorkerMessageParams,
   WorkerMessageType,
 } from './globalConstants';
@@ -51,8 +52,10 @@ async function initDb() {
   window.hartenfeller_dev.plugins.sync_offline_data.dbStauts =
     DbStatus.Initializing;
 
+  const initDbPayload: InitDbPayloadData = { loglevel: apex.debug.getLevel() };
   const { messageType, data } = await sendMsgToWorker({
     messageType: WorkerMessageType.InitDb,
+    data: initDbPayload,
   });
 
   if (messageType !== WorkerMessageType.InitDbResult) {

@@ -1,6 +1,11 @@
 import { initDb } from './db/initDb';
 import { initTables } from './db/userTables';
-import { WorkerMessageParams, WorkerMessageType } from '../globalConstants';
+import {
+  InitDbPayloadData,
+  WorkerMessageParams,
+  WorkerMessageType,
+} from '../globalConstants';
+import { initLogLevel } from './util/logger';
 
 function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
   postMessage({ messageType, data });
@@ -13,13 +18,16 @@ function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
       let result: any;
       switch (data.messageType) {
         case WorkerMessageType.InitDb: {
-          const data = await initDb();
+          const messageData = data.data as InitDbPayloadData;
+          initLogLevel(messageData.loglevel);
 
-          if (data.ok) {
+          const res = await initDb();
+
+          if (res.ok) {
             await initTables();
           }
 
-          result = { messageType: WorkerMessageType.InitDbResult, data };
+          result = { messageType: WorkerMessageType.InitDbResult, data: res };
           break;
         }
         /*
