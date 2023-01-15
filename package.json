@@ -10,16 +10,16 @@
     "build-demo": "npx webpack-cli --mode=production --config webpack.prod-demo.js"
   },
   "devDependencies": {
-    "rome": "^10.0.1",
+    "rome": "^11.0.0",
     "terser-webpack-plugin": "^5.3.6",
-    "ts-loader": "^9.4.1",
-    "typescript": "4.6"
+    "ts-loader": "^9.4.2",
+    "typescript": "4.9.4"
   },
   "dependencies": {
     "html-webpack-plugin": "^5.5.0",
     "wa-sqlite": "rhashimoto/wa-sqlite#buildless",
     "webpack": "^5.75.0",
-    "webpack-cli": "^4.10.0",
+    "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^4.11.1",
     "worker-loader": "^3.0.8"
   }

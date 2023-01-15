@@ -18,6 +18,9 @@ export async function initDb(): Promise<InitDbMsgData> {
     // @ts-ignore
     sqlite3.vfs_register(new OriginPrivateFileSystemVFS(), true);
 
+    const oo = (sqlite3 as any)?.oo1 as any;
+    console.log('oo1', oo);
+
     db = await sqlite3.open_v2(
       DB_NAME,
       SQLite.SQLITE_OPEN_CREATE |
