@@ -18,6 +18,8 @@ declare global {
   }
 }
 
+let gFilePrefix = '';
+
 const apex = window.apex;
 
 const worker = new Worker();
@@ -43,6 +45,8 @@ function sendMsgToWorker({
   });
 }
 
+let initDbRetries = 0;
+
 async function initDb() {
   if (
     window.hartenfeller_dev.plugins.sync_offline_data.dbStauts !==
@@ -51,10 +55,24 @@ async function initDb() {
     // already initialized (maybe by another plugin instance)
     return;
   }
+
+  if (!gFilePrefix) {
+    if (initDbRetries < 20) {
+      initDbRetries++;
+      setTimeout(() => initDb(), 100);
+    } else {
+      apex.debug.error('filePrefix is emptry after 20 retries...');
+    }
+    return;
+  }
+
   window.hartenfeller_dev.plugins.sync_offline_data.dbStauts =
     DbStatus.Initializing;
 
-  const initDbPayload: InitDbPayloadData = { loglevel: apex.debug.getLevel() };
+  const initDbPayload: InitDbPayloadData = {
+    loglevel: apex.debug.getLevel(),
+    filePrefix: gFilePrefix,
+  };
   const { messageType, data } = await sendMsgToWorker({
     messageType: WorkerMessageType.InitDb,
     data: initDbPayload,
@@ -94,7 +112,11 @@ worker.addEventListener(
   { once: true },
 );
 
-let initRetries = 0;
+function setFilePrefix({ filePrefix }: { filePrefix: string }) {
+  gFilePrefix = filePrefix;
+}
+
+let initStorageRetries = 0;
 
 async function initStorage({
   ajaxId,
@@ -113,8 +135,8 @@ async function initStorage({
     window.hartenfeller_dev.plugins.sync_offline_data.dbStauts !==
     DbStatus.Initialized
   ) {
-    if (initRetries < 20) {
-      initRetries++;
+    if (initStorageRetries < 20) {
+      initStorageRetries++;
       setTimeout(
         () =>
           initStorage({
@@ -196,6 +218,8 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data) {
   window.hartenfeller_dev.plugins.sync_offline_data = {};
 }
 if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
+  window.hartenfeller_dev.plugins.sync_offline_data.setFilePrefix =
+    setFilePrefix;
   window.hartenfeller_dev.plugins.sync_offline_data.initStorage = initStorage;
   /*
   window.hartenfeller_dev.plugins.sync_offline_data.createTable = createTable;

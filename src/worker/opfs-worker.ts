@@ -6,7 +6,7 @@ import {
   WorkerMessageParams,
   WorkerMessageType,
 } from '../globalConstants';
-import { initLogLevel } from './util/logger';
+import { initLogLevel, log } from './util/logger';
 
 function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
   postMessage({ messageType, data });
@@ -21,6 +21,14 @@ function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
         case WorkerMessageType.InitDb: {
           const messageData = data.data as InitDbPayloadData;
           initLogLevel(messageData.loglevel);
+
+          const url = self.location.href;
+          const regex = /(http.*)\/r\/.*/gm;
+          const urlPrefix = regex.exec(url)[1];
+          const fullUrl = `${urlPrefix}/${messageData.filePrefix}sqlite3.js`;
+
+          log.info('script src:', fullUrl);
+          importScripts(fullUrl);
 
           const res = await initDb();
 

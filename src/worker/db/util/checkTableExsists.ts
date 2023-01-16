@@ -8,7 +8,7 @@ export default async function checkTableExists(tabname: string) {
 
   let result: boolean;
 
-  await sqlite3.exec(db, sql, (row, columns) => {
+  await sqlite3.exec(db, sql, (row: any, columns: any) => {
     const data = rowToObject(row, columns);
     result = (data.cnt as number) > 0;
     log.trace('checkTableExists result:', data.cnt);

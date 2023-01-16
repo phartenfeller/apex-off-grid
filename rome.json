@@ -30,5 +30,8 @@
     "formatter": {
       "quoteStyle": "single"
     }
+  },
+  "files": {
+    "ignore": ["**/jswasm/**", "**/node_modules/**"]
   }
 }

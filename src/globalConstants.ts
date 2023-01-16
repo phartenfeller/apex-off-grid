@@ -19,6 +19,7 @@ export type InitDbMsgData = {
 
 export type InitDbPayloadData = {
   loglevel: number;
+  filePrefix: string;
 };
 
 export type InitSourceMsgData = {

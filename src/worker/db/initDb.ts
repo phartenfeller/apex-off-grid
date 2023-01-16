@@ -1,18 +1,27 @@
-import * as SQLite from 'wa-sqlite';
-import SQLiteModuleFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
+// import * as SQLite from 'wa-sqlite';
+// import SQLiteModuleFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
 import { InitDbMsgData } from '../../globalConstants';
-import { OriginPrivateFileSystemVFS } from './util/PrivateFileSystemVFS.js';
+// import { OriginPrivateFileSystemVFS } from './util/PrivateFileSystemVFS.js';
 import { log } from '../util/logger';
+import type { Database } from 'sqlite3';
 
 const DB_NAME = 'file:///hartenfeller_dev_apex_offline_data.sqlite';
 const PREAMBLE = `-- Pre-run setup
 PRAGMA journal_mode=WAL;`;
 
-export let sqlite3: SQLiteAPI;
-export let db: number;
+export let sqlite3: any;
+export let db: Database;
+
+declare global {
+  function sqlite3InitModule(options: {
+    print: object;
+    printErr: object;
+  }): Promise<void>;
+}
 
 export async function initDb(): Promise<InitDbMsgData> {
   try {
+    /*
     const mod = await SQLiteModuleFactory();
     sqlite3 = SQLite.Factory(mod);
     // @ts-ignore
@@ -31,6 +40,29 @@ export async function initDb(): Promise<InitDbMsgData> {
     await sqlite3.exec(db, PREAMBLE);
     log.info('Database succefully initialized!');
     return { ok: true };
+    */
+
+    self
+      .sqlite3InitModule({ print: log.info, printErr: log.error })
+      .then(function (sqlite3) {
+        log.info('Done initializing. Running demo...');
+        try {
+          const oo = (sqlite3 as any)?.oo1 as any;
+          const opfs = (sqlite3 as any)?.opfs as any;
+          if (opfs) {
+            db = new opfs.OpfsDb(DB_NAME) as Database;
+            log.info('The OPFS is available.');
+          } else {
+            db = new oo.DB(DB_NAME, 'ct') as Database;
+            log.info('The OPFS is not available.');
+          }
+          log.info('transient db =', (db as any).filename);
+          return { ok: true };
+        } catch (e) {
+          log.error(`Could not initialize database: ${e.message}`);
+          return { ok: false };
+        }
+      });
   } catch (e) {
     return { ok: false, error: e.message };
   }

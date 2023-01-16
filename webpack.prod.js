@@ -1,3 +1,4 @@
+import CopyPlugin from 'copy-webpack-plugin';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import TerserPlugin from 'terser-webpack-plugin';
@@ -5,6 +6,7 @@ import TerserPlugin from 'terser-webpack-plugin';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const entry = path.resolve(__dirname, 'src', 'index.ts');
 const entryWorker = path.resolve(__dirname, 'src', 'worker', 'opfs-worker.ts');
+const outputPath = path.resolve(__dirname, 'dist');
 
 export default {
   entry: {
@@ -34,14 +36,18 @@ export default {
     extensions: ['.tsx', '.ts', '.js'],
   },
 
-  plugins: [],
+  plugins: [
+    new CopyPlugin({
+      patterns: [{ from: 'src/worker/db/jswasm' }],
+    }),
+  ],
   optimization: {
     minimize: true,
     minimizer: [new TerserPlugin({ test: /\.min\.js$/ })],
   },
 
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: outputPath,
     filename: '[name].js',
   },
 };

@@ -30,7 +30,12 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
           );
     end if;
 
-    l_return.javascript_function := 'function() { setTimeout(() => window.hartenfeller_dev.plugins.sync_offline_data.initStorage({'|| 
+    l_return.javascript_function := 'function() { ' ||
+                                  'apex.debug.info("'|| apex_string.format('init offline-sync %0 (v%1)', l_storage_id, l_storage_version) ||'");' ||
+                                  'window.hartenfeller_dev.plugins.sync_offline_data.setFilePrefix({' ||
+                                    apex_javascript.add_attribute( p_name => 'filePrefix', p_value => p_plugin.file_prefix ) ||
+                                  '});'||
+                                  'setTimeout(() => window.hartenfeller_dev.plugins.sync_offline_data.initStorage({'|| 
                                   apex_javascript.add_attribute( p_name => 'ajaxId', p_value => apex_plugin.get_ajax_identifier ) ||
                                   apex_javascript.add_attribute( p_name => 'storageId', p_value => l_storage_id ) ||
                                   apex_javascript.add_attribute( p_name => 'storageVersion', p_value => l_storage_version ) ||
