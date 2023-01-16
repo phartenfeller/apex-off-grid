@@ -6,8 +6,6 @@ import { log } from '../util/logger';
 import type { Database } from 'sqlite3';
 
 const DB_NAME = 'file:///hartenfeller_dev_apex_offline_data.sqlite';
-const PREAMBLE = `-- Pre-run setup
-PRAGMA journal_mode=WAL;`;
 
 export let sqlite3: any;
 export let db: Database;
@@ -44,11 +42,19 @@ export async function initDb(): Promise<InitDbMsgData> {
 
     self
       .sqlite3InitModule({ print: log.info, printErr: log.error })
-      .then(function (sqlite3) {
-        log.info('Done initializing. Running demo...');
+      .then((res: any) => {
         try {
-          const oo = (sqlite3 as any)?.oo1 as any;
-          const opfs = (sqlite3 as any)?.opfs as any;
+          const { sqlite3 } = res;
+          log.info('Initialized sqlite3 module.', sqlite3);
+          const oo = sqlite3?.oo1 as any;
+          const opfs = sqlite3?.opfs as any;
+          const capi = sqlite3.capi as any;
+          log.info(
+            'sqlite3 version',
+            capi.sqlite3_libversion(),
+            capi.sqlite3_sourceid(),
+            `OPFS? ${capi.sqlite3_vfs_find('opfs')}`,
+          );
           if (opfs) {
             db = new opfs.OpfsDb(DB_NAME) as Database;
             log.info('The OPFS is available.');
@@ -64,6 +70,7 @@ export async function initDb(): Promise<InitDbMsgData> {
         }
       });
   } catch (e) {
+    log.error(`Could not initialize database: ${e.message}`);
     return { ok: false, error: e.message };
   }
 }

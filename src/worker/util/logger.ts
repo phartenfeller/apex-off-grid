@@ -11,7 +11,7 @@ const LEVELS = {
   ENGINE_TRACE: 9,
 };
 
-let level = 1;
+let level = 2;
 
 export function initLogLevel(newLevel: number) {
   level = newLevel;
