@@ -1,5 +1,4 @@
 // @ts-ignore
-import Worker from 'worker-loader!./worker/opfs-worker.ts';
 import { ajax } from './apex/ajax';
 import {
   DbStatus,
@@ -22,7 +21,7 @@ let gFilePrefix = '';
 
 const apex = window.apex;
 
-const worker = new Worker();
+const worker = new Worker(new URL('./worker/opfs-worker.ts', import.meta.url));
 
 function sendMsgToWorker({
   messageType,

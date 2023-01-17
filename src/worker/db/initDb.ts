@@ -42,9 +42,8 @@ export async function initDb(): Promise<InitDbMsgData> {
 
     self
       .sqlite3InitModule({ print: log.info, printErr: log.error })
-      .then((res: any) => {
+      .then((sqlite3: any) => {
         try {
-          const { sqlite3 } = res;
           log.info('Initialized sqlite3 module.', sqlite3);
           const oo = sqlite3?.oo1 as any;
           const opfs = sqlite3?.opfs as any;

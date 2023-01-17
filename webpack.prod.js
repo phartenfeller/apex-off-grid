@@ -12,15 +12,11 @@ export default {
   entry: {
     index: entry,
     'index.min': entry,
-    'opfs-worker.min': entryWorker,
+    // 'opfs-worker.min': entryWorker,
   },
 
   module: {
     rules: [
-      {
-        test: /\.worker\.js$/,
-        use: { loader: 'worker-loader' },
-      },
       {
         test: /\.wasm$/,
         type: 'asset/inline',
