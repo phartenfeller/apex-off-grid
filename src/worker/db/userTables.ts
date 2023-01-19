@@ -2,11 +2,23 @@ import { InitSourceMsgData } from '../../globalConstants';
 import { log } from '../util/logger';
 import { db } from './initDb';
 import { addMetaEntry, checkMetaEntryExists, initMetaTable } from './metaTable';
-import { Colinfo } from './types';
+import { Colinfo, Datatype } from './types';
 import checkTableExists from './util/checkTableExsists';
 
 export async function initTables() {
   await initMetaTable();
+}
+
+function getDatatype(type: Datatype, length?: number) {
+  // text has no precision
+  if (type === 'text') {
+    return type;
+  }
+
+  if (length) {
+    return `${type}(${length})`;
+  }
+  return type;
 }
 
 function generateTableSource(
@@ -20,15 +32,15 @@ function generateTableSource(
 
   for (const col of colData) {
     atomics.push(
-      `${col.colname} ${col.datatype}${
-        col.datatypeLength ? `(${col.datatypeLength})` : ''
-      } ${col.isRequired ? 'NOT NULL' : ''}`,
+      `${col.colname} ${getDatatype(col.datatype, col.datatypeLength)} ${
+        col.isRequired ? 'NOT NULL' : ''
+      }`,
     );
   }
 
   atomics.push(`PRIMARY KEY (${pkCol})`);
 
-  statement += `   ${atomics.join(', ')}    );`;
+  statement += `   ${atomics.join(', ')}    ) strict;`;
 
   return statement;
 }

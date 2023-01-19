@@ -1,6 +1,8 @@
+export type Datatype = 'real' | 'text';
+
 export type Colinfo = {
   colname: string;
-  datatype: 'number' | 'text';
+  datatype: Datatype;
   datatypeLength?: number;
   isRequired: boolean;
 };

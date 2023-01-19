@@ -3,7 +3,6 @@ import { log } from '../util/logger';
 
 const DB_NAME = 'file:///hartenfeller_dev_apex_offline_data.sqlite';
 
-export let sqlite3: any;
 export let db: sqlite3oo1.DB;
 
 declare global {
@@ -11,6 +10,15 @@ declare global {
     print: object;
     printErr: object;
   }): Promise<void>;
+}
+
+function optimizeDb() {
+  log.trace('Start optimizing database');
+  db.exec([
+    'PRAGMA analysis_limit=400;', // make sure pragma optimize does not take too long
+    'PRAGMA optimize;', // gather statistics to improve query optimization
+  ]);
+  log.trace('Finish optimizing database');
 }
 
 export async function initDb(): Promise<InitDbMsgData> {
@@ -38,6 +46,15 @@ export async function initDb(): Promise<InitDbMsgData> {
               log.info('The OPFS is not available.');
             }
             log.info('transient db =', (db as any).filename);
+
+            // optimize for speed (with safety): https://cj.rs/blog/sqlite-pragma-cheatsheet-for-performance-and-consistency/
+            db.exec([
+              'PRAGMA journal_mode = wal;',
+              'PRAGMA synchronous = normal;',
+            ]);
+
+            setTimeout(optimizeDb, 1000 * 60 * 2); // optimize after 2 minutes
+
             resolve({ ok: true });
           } catch (e) {
             log.error(`Could not initialize database: ${e.message}`);

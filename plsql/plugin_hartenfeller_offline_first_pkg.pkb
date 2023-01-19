@@ -59,7 +59,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
       when apex_exec.c_data_type_varchar2 then
         return 'text';
       when apex_exec.c_data_type_number then
-        return 'number';
+        return 'real';
       else
         apex_debug.error( apex_string.format('Unknown datatype => %0', pi_datatype ) );
         return 'text';

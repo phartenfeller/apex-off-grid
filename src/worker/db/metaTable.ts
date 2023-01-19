@@ -1,6 +1,6 @@
 import { InitSourceMsgData } from '../../globalConstants';
 import { log } from '../util/logger';
-import { db, sqlite3 } from './initDb';
+import { db } from './initDb';
 import checkTableExists from './util/checkTableExsists';
 
 const META_TABLE_VERSION = 1;
@@ -19,10 +19,10 @@ async function createMetaTable() {
     last_changed_column TEXT NOT NULL,
     primary_key_column TEXT NOT NULL,
     PRIMARY KEY (storage_id, storage_version)
-  );`;
+  ) strict;`;
   log.trace('createMetaTable sql:', sql);
 
-  await sqlite3.exec(db, sql);
+  db.exec(sql);
   log.info('created meta table');
 }
 
@@ -44,7 +44,7 @@ export async function addMetaEntry({
     $storageVersion,
     $colData,
     $pkColname,
-    lastChangedColname
+    $lastChangedColname
   );`;
   log.trace(sql);
 
