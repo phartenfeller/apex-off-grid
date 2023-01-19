@@ -1,15 +1,10 @@
-// import * as SQLite from 'wa-sqlite';
-// import SQLiteModuleFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
 import { InitDbMsgData } from '../../globalConstants';
-// import { OriginPrivateFileSystemVFS } from './util/PrivateFileSystemVFS.js';
 import { log } from '../util/logger';
-import type { Database } from 'sqlite3';
-import { resolve } from 'node:path';
 
 const DB_NAME = 'file:///hartenfeller_dev_apex_offline_data.sqlite';
 
 export let sqlite3: any;
-export let db: Database;
+export let db: sqlite3oo1.DB;
 
 declare global {
   function sqlite3InitModule(options: {
@@ -36,10 +31,10 @@ export async function initDb(): Promise<InitDbMsgData> {
               `OPFS? ${capi.sqlite3_vfs_find('opfs')}`,
             );
             if (opfs) {
-              db = new opfs.OpfsDb(DB_NAME) as Database;
+              db = new opfs.OpfsDb(DB_NAME) as sqlite3oo1.DB;
               log.info('The OPFS is available.');
             } else {
-              db = new oo.DB(DB_NAME, 'ct') as Database;
+              db = new oo.DB(DB_NAME, 'ct') as sqlite3oo1.DB;
               log.info('The OPFS is not available.');
             }
             log.info('transient db =', (db as any).filename);

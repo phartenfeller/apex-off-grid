@@ -21,7 +21,12 @@ let gFilePrefix = '';
 
 const apex = window.apex;
 
-const worker = new Worker(new URL('./worker/opfs-worker.ts', import.meta.url));
+const worker = new Worker(
+  /* webpackChunkName: "sqlite-worker" */ new URL(
+    './worker/sqlite-worker.ts',
+    import.meta.url,
+  ),
+);
 
 function sendMsgToWorker({
   messageType,

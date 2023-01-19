@@ -45,5 +45,6 @@ export default {
   output: {
     path: outputPath,
     filename: '[name].js',
+    clean: true,
   },
 };

@@ -242,13 +242,6 @@
   dependencies:
     "@types/node" "*"
 
-"@types/sqlite3@^3.1.8":
-  version "3.1.8"
-  resolved "https://registry.yarnpkg.com/@types/sqlite3/-/sqlite3-3.1.8.tgz#e64310c5841fc01c1a8795d960d951e4cf940296"
-  integrity sha512-sQMt/qnyUWnqiTcJXm5ZfNPIBeJ/DVvJDwxw+0tAxPJvadzfiP1QhryO1JOR6t1yfb8NpzQb/Rud06mob5laIA==
-  dependencies:
-    "@types/node" "*"
-
 "@types/ws@^8.5.1":
   version "8.5.3"
   resolved "https://registry.yarnpkg.com/@types/ws/-/ws-8.5.3.tgz#7d25a1ffbecd3c4f2d35068d0b283c037003274d"
@@ -2343,10 +2336,6 @@ vary@~1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==
-
-wa-sqlite@rhashimoto/wa-sqlite#buildless:
-  version "0.8.3"
-  resolved "https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/88de61aca72a15a8bc3fd9e894a060fd17985ee8"
 
 watchpack@^2.4.0:
   version "2.4.0"

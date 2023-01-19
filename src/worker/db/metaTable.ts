@@ -1,7 +1,5 @@
-import * as SQLite from 'wa-sqlite';
 import { InitSourceMsgData } from '../../globalConstants';
 import { log } from '../util/logger';
-import { bindParam } from './bindParam';
 import { db, sqlite3 } from './initDb';
 import checkTableExists from './util/checkTableExsists';
 
@@ -42,46 +40,23 @@ export async function addMetaEntry({
     primary_key_column,
     last_changed_column
   ) VALUES (
-    ?,
-    ?,
-    ?,
-    ?,
-    ?
+    $storageId,
+    $storageVersion,
+    $colData,
+    $pkColname,
+    lastChangedColname
   );`;
   log.trace(sql);
 
-  const str = sqlite3.str_new(db, sql);
-  try {
-    // Traverse and prepare the SQL, statement by statement.
-    let prepared: {
-      stmt: number;
-      sql: number;
-    } = { stmt: undefined, sql: sqlite3.str_value(str) };
-    // rome-ignore lint/nursery/noConditionalAssignment: <explanation>
-    while ((prepared = await sqlite3.prepare_v2(db, prepared.sql))) {
-      try {
-        await bindParam('storageId', prepared.stmt, 1, storageId);
-        await bindParam('storageVersion', prepared.stmt, 2, storageVersion);
-        await bindParam('colData', prepared.stmt, 3, JSON.stringify(colData));
-        await bindParam('pkColname', prepared.stmt, 4, pkColname);
-        await bindParam(
-          'lastChangedColname',
-          prepared.stmt,
-          5,
-          lastChangedColname,
-        );
-
-        // Step through the rows produced by the statement.
-        while ((await sqlite3.step(prepared.stmt)) === SQLite.SQLITE_ROW) {
-          log.trace(`statement "${prepared.sql}" succeeded`);
-        }
-      } finally {
-        sqlite3.finalize(prepared.stmt);
-      }
-    }
-  } finally {
-    sqlite3.str_finish(str);
-  }
+  db.exec(sql, {
+    bind: {
+      $storageId: storageId,
+      $storageVersion: storageVersion,
+      $colData: JSON.stringify(colData),
+      $pkColname: pkColname,
+      $lastChangedColname: lastChangedColname,
+    },
+  });
 }
 
 /*
@@ -108,33 +83,15 @@ export async function checkMetaEntryExists(
   storageId: string,
   storageVersion: number,
 ) {
-  const sql = `select count(*) from ${META_TABLE} where storage_id = ? and storage_version = ?;`;
+  const sql = `select count(*) as cnt from ${META_TABLE} where storage_id = $storageId and storage_version = $storageVersion;`;
   log.trace('checkMetaEntryExists sql:', sql);
 
-  const str = sqlite3.str_new(db, sql);
+  const data = db.selectObject(sql, {
+    $storageId: storageId,
+    $storageVersion: storageVersion,
+  }) as { cnt: number };
+  const result = data.cnt > 0;
+  log.trace('checkMetaEntryExists result:', result);
 
-  try {
-    // Traverse and prepare the SQL, statement by statement.
-    let prepared: {
-      stmt: number;
-      sql: number;
-    } = { stmt: undefined, sql: sqlite3.str_value(str) };
-    // rome-ignore lint/nursery/noConditionalAssignment: <explanation>
-    while ((prepared = await sqlite3.prepare_v2(db, prepared.sql))) {
-      try {
-        await bindParam('storageId', prepared.stmt, 1, storageId);
-        await bindParam('storageVersion', prepared.stmt, 2, storageVersion);
-
-        // Step through the rows produced by the statement.
-        while ((await sqlite3.step(prepared.stmt)) === SQLite.SQLITE_ROW) {
-          const count = sqlite3.column_int(prepared.stmt, 0);
-          return count > 0;
-        }
-      } finally {
-        sqlite3.finalize(prepared.stmt);
-      }
-    }
-  } finally {
-    sqlite3.str_finish(str);
-  }
+  return result;
 }
