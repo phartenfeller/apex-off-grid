@@ -122,6 +122,13 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
 
     l_method varchar2(100);
     l_sqlite_col_info_t tt_sqlite_col_info;
+
+    l_context           apex_exec.t_context;
+    l_col_info          apex_exec.t_column;
+    l_col_info_exec_tab apex_exec.t_columns;
+
+    l_first_row pls_integer;
+    l_max_rows  pls_integer;
   begin
     if apex_application.g_debug then
       apex_plugin_util.debug_dynamic_action
@@ -153,6 +160,42 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
 
         apex_json.close_array; -- ]
  
+      when 'fetch_data' then
+        l_first_row := coalesce(APEX_APPLICATION.g_x02, 1);
+        l_max_rows := coalesce(APEX_APPLICATION.g_x03, 50);
+
+        l_context :=
+          apex_exec.open_query_context
+          (
+            p_first_row => l_first_row
+          , p_max_rows  => l_max_rows
+          );
+
+        apex_json.open_array('data'); -- "data": [
+
+        for i in 1 .. apex_exec.get_column_count(l_context)
+        loop
+          l_col_info := apex_exec.get_column(l_context, i);
+          l_col_info_exec_tab(i) := l_col_info;
+        end loop;
+
+        while apex_exec.next_row( p_context => l_context ) 
+        loop
+          apex_json.open_object; -- {
+
+          for i in 1 .. l_col_info_exec_tab.count
+          loop
+            if l_col_info_exec_tab(i).data_type = apex_exec.c_data_type_number then
+              apex_json.write(l_col_info_exec_tab(i).name, apex_exec.get_number( p_context => l_context, p_column_idx => i ) );
+            else
+              apex_json.write(l_col_info_exec_tab(i).name, apex_exec.get_varchar2( p_context => l_context, p_column_idx => i ) );
+            end if;
+          end loop;
+
+          apex_json.close_object; -- }
+        end loop;
+
+        apex_json.close_array;
       else
         apex_debug.error( apex_string.format('Unknown method => %0', l_method ) );
     end case;
