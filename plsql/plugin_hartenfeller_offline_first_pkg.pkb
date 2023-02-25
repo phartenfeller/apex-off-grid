@@ -167,7 +167,9 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
         l_context :=
           apex_exec.open_query_context
           (
-            p_first_row => l_first_row
+            p_location  => apex_exec.c_location_local_db
+          , p_sql_query => l_source_query
+          , p_first_row => l_first_row
           , p_max_rows  => l_max_rows
           );
 
@@ -196,6 +198,9 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
         end loop;
 
         apex_json.close_array;
+
+        apex_json.write('hasMoreRows', apex_exec.has_more_rows( l_context ));
+
       else
         apex_debug.error( apex_string.format('Unknown method => %0', l_method ) );
     end case;
