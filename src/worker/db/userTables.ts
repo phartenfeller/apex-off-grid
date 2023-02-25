@@ -3,6 +3,7 @@ import { log } from '../util/logger';
 import { db } from './initDb';
 import { addMetaEntry, checkMetaEntryExists, initMetaTable } from './metaTable';
 import { Colinfo, Datatype } from './types';
+import checkTableEmpty from './util/checkTableEmptry';
 import checkTableExists from './util/checkTableExsists';
 
 export async function initTables() {
@@ -93,7 +94,9 @@ export async function initSource({
       log.info(`created table "${tabname}"`);
     }
 
-    return { ok: true };
+    const isEmpty = checkTableEmpty(tabname);
+
+    return { ok: true, isEmpty };
   } catch (err) {
     log.error('initSource error:', err);
     return { ok: false, error: err.message };

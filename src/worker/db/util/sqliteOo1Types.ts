@@ -15,6 +15,26 @@ declare namespace sqlite3oo1 {
 
   export type execOptionsWOsql = Omit<execOptions, 'sql'>;
 
+  type boundable =
+    | number
+    | string
+    | undefined
+    | null
+    | Uint8Array
+    | Int8Array
+    | ArrayBuffer;
+
+  export class Statement {
+    bind(values: boundable | any[] | object): Statement;
+    bind(idx: string | number, value: boundable): Statement;
+
+    clearBindings(): Statement;
+    step(): boolean;
+    stepReset(): Statement;
+
+    finalize(): void;
+  }
+
   export class DB {
     constructor(filename: string, mode: string);
 
@@ -24,5 +44,8 @@ declare namespace sqlite3oo1 {
 
     selectObject(sql: string, bind?: bind): { [key: string]: any };
     selectObjects(sql: string, bind?: bind): { [key: string]: any }[];
+
+    transaction(callback: () => void): void;
+    prepare(sql: string): Statement;
   }
 }

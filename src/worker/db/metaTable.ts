@@ -1,6 +1,7 @@
 import { InitSourceMsgData } from '../../globalConstants';
 import { log } from '../util/logger';
 import { db } from './initDb';
+import { Colinfo } from './types';
 import checkTableExists from './util/checkTableExsists';
 
 const META_TABLE_VERSION = 1;
@@ -10,7 +11,7 @@ function checkMetaTableExists() {
   return checkTableExists(META_TABLE);
 }
 
-async function createMetaTable() {
+function createMetaTable() {
   const sql = `CREATE TABLE ${META_TABLE} (
     storage_id TEXT NOT NULL,
     storage_version INTEGER NOT NULL,
@@ -26,7 +27,7 @@ async function createMetaTable() {
   log.info('created meta table');
 }
 
-export async function addMetaEntry({
+export function addMetaEntry({
   storageId,
   storageVersion,
   colData,
@@ -60,7 +61,7 @@ export async function addMetaEntry({
 }
 
 /*
-export async function removeMetaEntry({ storageId, storageVersion }: {storageId: string, storageVersion: number}}) {
+export function removeMetaEntry({ storageId, storageVersion }: {storageId: string, storageVersion: number}}) {
   const sql = `
     DELETE FROM ${META_TABLE}
     WHERE storage_id = ? AND storage_version = ?;`;
@@ -68,18 +69,18 @@ export async function removeMetaEntry({ storageId, storageVersion }: {storageId:
   log.trace('removeMetaEntry sql:', sql);
 
 
-  await sqlite3.exec({sql, bind: [storageId, storageVersion]});
+   sqlite3.exec({sql, bind: [storageId, storageVersion]});
 }
 */
 
-export async function initMetaTable() {
-  const metaTableExsits = await checkMetaTableExists();
+export function initMetaTable() {
+  const metaTableExsits = checkMetaTableExists();
   if (!metaTableExsits) {
-    await createMetaTable();
+    createMetaTable();
   }
 }
 
-export async function checkMetaEntryExists(
+export function checkMetaEntryExists(
   storageId: string,
   storageVersion: number,
 ) {
@@ -94,4 +95,31 @@ export async function checkMetaEntryExists(
   log.trace('checkMetaEntryExists result:', result);
 
   return result;
+}
+
+export function getStorageColumns(storageId: string, storageVersion: number) {
+  const exists = checkMetaEntryExists(storageId, storageVersion);
+  if (!exists) {
+    throw new Error(
+      `Meta entry does not exist for ${storageId} v${storageVersion}`,
+    );
+  }
+
+  const sql = `select column_structure as colsStr, last_changed_column as lastChangedCol, primary_key_column as pkCol from ${META_TABLE} where storage_id = $storageId and storage_version = $storageVersion;`;
+  log.trace('getStorageColumns sql:', sql);
+
+  const data = db.selectObject(sql, {
+    $storageId: storageId,
+    $storageVersion: storageVersion,
+  }) as { colsStr: string; lastChangedCol: string; pkCol: string };
+
+  const info = {
+    lastChangedCol: data.lastChangedCol,
+    pkCol: data.pkCol,
+    cols: JSON.parse(data.colsStr) as Colinfo[],
+  };
+
+  log.trace('getStorageColumns result:', data);
+
+  return info;
 }

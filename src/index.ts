@@ -6,6 +6,8 @@ import {
   InitDbPayloadData,
   InitSourceMsgData,
   InitSourceResponse,
+  InsertRowsMsgData,
+  InsertRowsResponse,
   WorkerMessageParams,
   WorkerMessageType,
 } from './globalConstants';
@@ -125,6 +127,64 @@ function setFilePrefix({ filePrefix }: { filePrefix: string }) {
 
 let initStorageRetries = 0;
 
+async function fetchAllRows({
+  ajaxId,
+  storageId,
+  storageVersion,
+}: {
+  ajaxId: string;
+  storageId: string;
+  storageVersion: number;
+}) {
+  let hasMoreRows = true;
+  const pageSize = 50;
+  let nextRow = 1;
+
+  while (hasMoreRows) {
+    const res = (await ajax({
+      apex,
+      ajaxId,
+      method: 'fetch_data',
+      x02: nextRow,
+      x03: pageSize,
+    })) as {
+      data: any[];
+      hasMoreRows: boolean;
+    };
+
+    apex.debug.info(`fetchAllRows ${storageId} v${storageVersion}`, res);
+
+    hasMoreRows = res.hasMoreRows;
+    nextRow += pageSize;
+
+    const payload: InsertRowsMsgData = {
+      storageId,
+      storageVersion,
+      rows: res.data,
+    };
+
+    const { messageType, data } = await sendMsgToWorker({
+      messageType: WorkerMessageType.InsertRows,
+      data: payload,
+    });
+
+    if (messageType !== WorkerMessageType.InsertRowsResult) {
+      apex.debug.error(
+        `Unexpected message type: ${messageType}. Expected: ${WorkerMessageType.InsertRowsResult}`,
+      );
+      return;
+    }
+
+    const { ok, error } = data as InsertRowsResponse;
+    apex.debug.info(`%c InsertRowsResult:`, YELLOW_CONSOLE, data);
+
+    if (!ok) {
+      apex.debug.error(`Could not insert rows: ${error}`);
+      return;
+    }
+  }
+}
+
 async function initStorage({
   ajaxId,
   storageId,
@@ -201,12 +261,18 @@ async function initStorage({
     return;
   }
 
-  const { ok, error } = data as InitSourceResponse;
+  const { ok, error, isEmpty } = data as InitSourceResponse;
   apex.debug.info('%c initStorage result', YELLOW_CONSOLE, data);
 
   if (!ok) {
     apex.debug.error(`Could not initialize Storage: ${error}`);
     return;
+  }
+
+  if (isEmpty === true) {
+    fetchAllRows({ ajaxId, storageId, storageVersion });
+  } else {
+    apex.debug.info('Storage is not empty. TODO sync...');
   }
 }
 

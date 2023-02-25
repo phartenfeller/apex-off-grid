@@ -1,7 +1,7 @@
 import { log } from '../../util/logger';
 import { db } from '../initDb';
 
-export default async function checkTableExists(tabname: string) {
+export default function checkTableExists(tabname: string) {
   const sql = `select count(*) as cnt from sqlite_master where type = 'table' and lower(name) = $tabname`;
   log.trace('checkTableExists sql:', sql);
 

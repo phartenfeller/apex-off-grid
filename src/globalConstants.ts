@@ -6,6 +6,8 @@ export enum WorkerMessageType {
   InitDbResult = 'init_db_result',
   InitSource = 'init_source',
   InitSourceResult = 'init_source_result',
+  InsertRows = 'insert_rows',
+  InsertRowsResult = 'insert_rows_result',
 }
 
 export type WorkerMessageParams = {
@@ -32,6 +34,18 @@ export type InitSourceMsgData = {
 };
 
 export type InitSourceResponse = {
+  ok: boolean;
+  error?: string;
+  isEmpty?: boolean;
+};
+
+export type InsertRowsMsgData = {
+  storageId: string;
+  storageVersion: number;
+  rows: any[];
+};
+
+export type InsertRowsResponse = {
   ok: boolean;
   error?: string;
 };
