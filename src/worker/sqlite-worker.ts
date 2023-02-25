@@ -43,8 +43,13 @@ function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
         case WorkerMessageType.InitSource: {
           const messageData = data.data as InitSourceMsgData;
 
-          await initSource(messageData);
+          const res = await initSource(messageData);
 
+          result = {
+            messageType: WorkerMessageType.InitSourceResult,
+            data: res,
+          };
+          sendMsgToMain(result);
           break;
         }
         /*

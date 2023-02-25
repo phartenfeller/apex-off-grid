@@ -5,6 +5,7 @@ export enum WorkerMessageType {
   InitDb = 'init_db',
   InitDbResult = 'init_db_result',
   InitSource = 'init_source',
+  InitSourceResult = 'init_source_result',
 }
 
 export type WorkerMessageParams = {
@@ -28,6 +29,11 @@ export type InitSourceMsgData = {
   colData: Colinfo[];
   pkColname: string;
   lastChangedColname: string;
+};
+
+export type InitSourceResponse = {
+  ok: boolean;
+  error?: string;
 };
 
 export enum DbStatus {

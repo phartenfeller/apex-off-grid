@@ -1,4 +1,4 @@
-import { InitSourceMsgData } from '../../globalConstants';
+import { InitSourceMsgData, InitSourceResponse } from '../../globalConstants';
 import { log } from '../util/logger';
 import { db } from './initDb';
 import { addMetaEntry, checkMetaEntryExists, initMetaTable } from './metaTable';
@@ -57,7 +57,7 @@ export async function initSource({
   colData,
   pkColname,
   lastChangedColname,
-}: InitSourceMsgData) {
+}: InitSourceMsgData): Promise<InitSourceResponse> {
   try {
     const tabname = `${storageId}_v${storageVersion}`;
 
@@ -92,8 +92,10 @@ export async function initSource({
       db.exec(sql);
       log.info(`created table "${tabname}"`);
     }
+
+    return { ok: true };
   } catch (err) {
     log.error('initSource error:', err);
-    throw err;
+    return { ok: false, error: err.message };
   }
 }

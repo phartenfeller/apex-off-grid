@@ -5,6 +5,7 @@ import {
   InitDbMsgData,
   InitDbPayloadData,
   InitSourceMsgData,
+  InitSourceResponse,
   WorkerMessageParams,
   WorkerMessageType,
 } from './globalConstants';
@@ -16,6 +17,8 @@ declare global {
     hartenfeller_dev: any;
   }
 }
+
+const YELLOW_CONSOLE = 'color: yellow';
 
 let gFilePrefix = '';
 
@@ -87,7 +90,7 @@ async function initDb() {
     return;
   }
 
-  apex.debug.info('initDb result', data);
+  apex.debug.info('%c initDb result', YELLOW_CONSOLE, data);
   const { ok, error } = data as InitDbMsgData;
 
   if (ok) {
@@ -153,7 +156,7 @@ async function initStorage({
         1000,
       );
     } else {
-      apex.debug.error('Could not initialize DB. Message from:', {
+      apex.debug.error('Could not initialize Storage. Message from:', {
         storageId,
         storageVersion,
       });
@@ -186,10 +189,25 @@ async function initStorage({
     lastChangedColname,
   };
 
-  await sendMsgToWorker({
+  const { messageType, data } = await sendMsgToWorker({
     messageType: WorkerMessageType.InitSource,
     data: payload,
   });
+
+  if (messageType !== WorkerMessageType.InitSourceResult) {
+    apex.debug.error(
+      `Unexpected message type: ${messageType}. Expected ${WorkerMessageType.InitSourceResult}`,
+    );
+    return;
+  }
+
+  const { ok, error } = data as InitSourceResponse;
+  apex.debug.info('%c initStorage result', YELLOW_CONSOLE, data);
+
+  if (!ok) {
+    apex.debug.error(`Could not initialize Storage: ${error}`);
+    return;
+  }
 }
 
 /*
