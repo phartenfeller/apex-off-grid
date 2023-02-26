@@ -1,5 +1,7 @@
 import { Colinfo } from './worker/db/types';
 
+export const YELLOW_CONSOLE = 'color: yellow';
+
 export enum WorkerMessageType {
   Loaded = 'loaded',
   InitDb = 'init_db',
@@ -11,6 +13,7 @@ export enum WorkerMessageType {
 }
 
 export type WorkerMessageParams = {
+  messageId: string;
   messageType: WorkerMessageType;
   data?: any;
 };

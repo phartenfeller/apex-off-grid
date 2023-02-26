@@ -10,7 +10,9 @@ import {
   InsertRowsResponse,
   WorkerMessageParams,
   WorkerMessageType,
+  YELLOW_CONSOLE,
 } from './globalConstants';
+import { initMsgBus, sendMsgToWorker } from './messageBus';
 import { Colinfo } from './worker/db/types';
 
 declare global {
@@ -19,8 +21,6 @@ declare global {
     hartenfeller_dev: any;
   }
 }
-
-const YELLOW_CONSOLE = 'color: yellow';
 
 let gFilePrefix = '';
 
@@ -32,27 +32,6 @@ const worker = new Worker(
     import.meta.url,
   ),
 );
-
-function sendMsgToWorker({
-  messageType,
-  data,
-}: WorkerMessageParams): Promise<WorkerMessageParams> {
-  worker.postMessage({ messageType, data });
-  return new Promise((resolve) => {
-    worker.addEventListener(
-      'message',
-      ({ data }: { data: WorkerMessageParams }) => {
-        apex.debug.info(
-          `Message received from Worker: ${data.messageType}`,
-          data.data,
-        );
-
-        resolve(data);
-      },
-      { once: true },
-    );
-  });
-}
 
 let initDbRetries = 0;
 
@@ -83,6 +62,8 @@ async function initDb() {
     filePrefix: gFilePrefix,
   };
   const { messageType, data } = await sendMsgToWorker({
+    storageId: 'initDb',
+    storageVersion: 1,
     messageType: WorkerMessageType.InitDb,
     data: initDbPayload,
   });
@@ -111,6 +92,7 @@ worker.addEventListener(
 
     if (data.messageType === WorkerMessageType.Loaded) {
       apex.debug.info('Worker loaded');
+      initMsgBus(worker, apex);
       initDb();
     } else {
       apex.debug.error(
@@ -163,17 +145,13 @@ async function fetchAllRows({
       rows: res.data,
     };
 
-    const { messageType, data } = await sendMsgToWorker({
+    const { data } = await sendMsgToWorker({
+      storageId,
+      storageVersion,
       messageType: WorkerMessageType.InsertRows,
       data: payload,
+      expectedMessageType: WorkerMessageType.InsertRowsResult,
     });
-
-    if (messageType !== WorkerMessageType.InsertRowsResult) {
-      apex.debug.error(
-        `Unexpected message type: ${messageType}. Expected: ${WorkerMessageType.InsertRowsResult}`,
-      );
-      return;
-    }
 
     const { ok, error } = data as InsertRowsResponse;
     apex.debug.info(`%c InsertRowsResult:`, YELLOW_CONSOLE, data);
@@ -249,17 +227,13 @@ async function initStorage({
     lastChangedColname,
   };
 
-  const { messageType, data } = await sendMsgToWorker({
+  const { data } = await sendMsgToWorker({
+    storageId,
+    storageVersion,
     messageType: WorkerMessageType.InitSource,
     data: payload,
+    expectedMessageType: WorkerMessageType.InitSourceResult,
   });
-
-  if (messageType !== WorkerMessageType.InitSourceResult) {
-    apex.debug.error(
-      `Unexpected message type: ${messageType}. Expected ${WorkerMessageType.InitSourceResult}`,
-    );
-    return;
-  }
 
   const { ok, error, isEmpty } = data as InitSourceResponse;
   apex.debug.info('%c initStorage result', YELLOW_CONSOLE, data);

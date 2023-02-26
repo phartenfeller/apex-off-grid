@@ -10,8 +10,8 @@ import {
 import { initLogLevel, log } from './util/logger';
 import insertRows from './db/util/insertRows';
 
-function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
-  postMessage({ messageType, data });
+function sendMsgToMain(obj: WorkerMessageParams) {
+  postMessage(obj);
 }
 
 (async function () {
@@ -38,7 +38,11 @@ function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
             await initTables();
           }
 
-          result = { messageType: WorkerMessageType.InitDbResult, data: res };
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.InitDbResult,
+            data: res,
+          };
           sendMsgToMain(result);
           break;
         }
@@ -48,6 +52,7 @@ function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
           const res = await initSource(messageData);
 
           result = {
+            messageId: data.messageId,
             messageType: WorkerMessageType.InitSourceResult,
             data: res,
           };
@@ -61,6 +66,7 @@ function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
           const res = insertRows({ storageId, storageVersion, rows });
 
           result = {
+            messageId: data.messageId,
             messageType: WorkerMessageType.InsertRowsResult,
             data: res,
           };
@@ -97,7 +103,8 @@ function sendMsgToMain({ messageType, data }: WorkerMessageParams) {
     },
   );
 
-  console.log('worker loaded');
-  console.log('worker window', self.window);
-  sendMsgToMain({ messageType: WorkerMessageType.Loaded });
+  sendMsgToMain({
+    messageId: 'worker_loaded',
+    messageType: WorkerMessageType.Loaded,
+  });
 })();
