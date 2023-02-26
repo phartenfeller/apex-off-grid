@@ -117,8 +117,10 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
   as
     l_return apex_plugin.t_dynamic_action_ajax_result;
 
-    l_source_query p_dynamic_action.attribute_01%type := p_dynamic_action.attribute_01;
-    l_storage_id   p_dynamic_action.attribute_03%type := p_dynamic_action.attribute_03;
+    l_source_query         p_dynamic_action.attribute_01%type := p_dynamic_action.attribute_01;
+    l_storage_id           p_dynamic_action.attribute_03%type := p_dynamic_action.attribute_03;
+    l_pk_colname           p_dynamic_action.attribute_04%type := p_dynamic_action.attribute_04;
+    l_last_changed_colname p_dynamic_action.attribute_05%type := p_dynamic_action.attribute_05;
 
     l_method varchar2(100);
     l_sqlite_col_info_t tt_sqlite_col_info;
@@ -187,6 +189,51 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
 
           for i in 1 .. l_col_info_exec_tab.count
           loop
+            if l_col_info_exec_tab(i).data_type = apex_exec.c_data_type_number then
+              apex_json.write(l_col_info_exec_tab(i).name, apex_exec.get_number( p_context => l_context, p_column_idx => i ) );
+            else
+              apex_json.write(l_col_info_exec_tab(i).name, apex_exec.get_varchar2( p_context => l_context, p_column_idx => i ) );
+            end if;
+          end loop;
+
+          apex_json.close_object; -- }
+        end loop;
+
+        apex_json.close_array;
+
+        apex_json.write('hasMoreRows', apex_exec.has_more_rows( l_context ));
+
+      when 'sync_checksums' then
+        l_first_row := coalesce(APEX_APPLICATION.g_x02, 1);
+        l_max_rows := coalesce(APEX_APPLICATION.g_x03, 50);
+
+        l_context :=
+          apex_exec.open_query_context
+          (
+            p_location  => apex_exec.c_location_local_db
+          , p_sql_query => l_source_query
+          , p_first_row => l_first_row
+          , p_max_rows  => l_max_rows
+          );
+
+        apex_json.open_array('data'); -- "data": [
+
+        for i in 1 .. apex_exec.get_column_count(l_context)
+        loop
+          l_col_info := apex_exec.get_column(l_context, i);
+          l_col_info_exec_tab(i) := l_col_info;
+        end loop;
+
+        while apex_exec.next_row( p_context => l_context ) 
+        loop
+          apex_json.open_object; -- {
+
+          for i in 1 .. l_col_info_exec_tab.count
+          loop
+            if l_col_info_exec_tab(i).name not in (upper(l_pk_colname), upper(l_last_changed_colname)) then
+              continue;
+            end if;
+
             if l_col_info_exec_tab(i).data_type = apex_exec.c_data_type_number then
               apex_json.write(l_col_info_exec_tab(i).name, apex_exec.get_number( p_context => l_context, p_column_idx => i ) );
             else

@@ -97,7 +97,16 @@ export function checkMetaEntryExists(
   return result;
 }
 
-export function getStorageColumns(storageId: string, storageVersion: number) {
+export type ColStructure = {
+  cols: Colinfo[];
+  lastChangedCol: string;
+  pkCol: string;
+};
+
+export function getStorageColumns(
+  storageId: string,
+  storageVersion: number,
+): ColStructure {
   const exists = checkMetaEntryExists(storageId, storageVersion);
   if (!exists) {
     throw new Error(
@@ -122,4 +131,11 @@ export function getStorageColumns(storageId: string, storageVersion: number) {
   log.trace('getStorageColumns result:', data);
 
   return info;
+}
+
+export function getPkColType(structure: ColStructure) {
+  const pkCol = structure.cols.find(
+    (col) => col.colname === structure.pkCol,
+  ) as Colinfo;
+  return pkCol.datatype;
 }

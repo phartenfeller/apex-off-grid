@@ -39,9 +39,12 @@ function generateTableSource(
     );
   }
 
+  atomics.push(`__change_type text check (__change_type in ('I', 'U', 'D'))`);
   atomics.push(`PRIMARY KEY (${pkCol})`);
 
   statement += `   ${atomics.join(', ')}    ) strict;`;
+
+  statement += `CREATE INDEX ${tabname}___change_type ON ${tabname} (__change_type);`;
 
   return statement;
 }

@@ -30,16 +30,17 @@ export async function initDb(): Promise<InitDbMsgData> {
           try {
             log.info('Initialized sqlite3 module.', sqlite3);
             const oo = sqlite3?.oo1 as any;
-            const opfs = sqlite3?.opfs as any;
+            //const opfs = sqlite3?.opfs as any;
             const capi = sqlite3.capi as any;
+            const opfsFound = capi.sqlite3_vfs_find('opfs');
             log.info(
               'sqlite3 version',
               capi.sqlite3_libversion(),
               capi.sqlite3_sourceid(),
-              `OPFS? ${capi.sqlite3_vfs_find('opfs')}`,
+              `OPFS? ==> ${opfsFound}`,
             );
-            if (opfs) {
-              db = new opfs.OpfsDb(DB_NAME) as sqlite3oo1.DB;
+            if (opfsFound) {
+              db = new oo.OpfsDb(DB_NAME) as sqlite3oo1.DB;
               log.info('The OPFS is available.');
             } else {
               db = new oo.DB(DB_NAME, 'ct') as sqlite3oo1.DB;
@@ -54,6 +55,7 @@ export async function initDb(): Promise<InitDbMsgData> {
             ]);
 
             setTimeout(optimizeDb, 1000 * 60 * 2); // optimize after 2 minutes
+            log.trace('DB', db);
 
             resolve({ ok: true });
           } catch (e) {

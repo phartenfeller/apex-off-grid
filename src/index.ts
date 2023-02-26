@@ -13,6 +13,7 @@ import {
   YELLOW_CONSOLE,
 } from './globalConstants';
 import { initMsgBus, sendMsgToWorker } from './messageBus';
+import syncRows from './sync';
 import { Colinfo } from './worker/db/types';
 
 declare global {
@@ -246,7 +247,7 @@ async function initStorage({
   if (isEmpty === true) {
     fetchAllRows({ ajaxId, storageId, storageVersion });
   } else {
-    apex.debug.info('Storage is not empty. TODO sync...');
+    syncRows({ ajaxId, storageId, storageVersion, apex });
   }
 }
 
