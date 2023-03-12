@@ -108,6 +108,46 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
       raise;
   end get_source_structure;
 
+  function get_json_clob
+    return clob
+  as
+    l_str_tab apex_t_varchar2 := apex_t_varchar2();
+    l_clob    clob;
+  begin
+    for i in 1..apex_application.g_json.count loop
+      l_str_tab.extend();
+      l_str_tab(i) := apex_application.g_json(i);
+    end loop;
+    l_clob := apex_string.join_clob( p_table => l_str_tab, p_sep => null );
+    return l_clob;
+  end get_json_clob;
+
+  procedure process_client_changed_rows
+  as
+    l_clob              clob;
+    l_json              json_object_t;
+    l_rows              json_array_t;
+    l_sync_template_row offline_data_sync%rowtype;
+    l_sync_row          offline_data_sync%rowtype;
+  begin
+    l_clob := get_json_clob();
+    l_json := json_object_t(l_clob);
+
+    l_sync_template_row.sync_storage_id      := l_json.get_string('storage_id');
+    l_sync_template_row.sync_storage_version := l_json.get_string('storage_version');
+    l_sync_template_row.sync_created_by      := v('APP_USER');
+    l_sync_template_row.sync_created_session := v('APP_SESSION');
+
+    l_rows := l_json.get_array('rows');
+
+    for i in 0 .. l_rows.get_size - 1 loop
+      l_sync_row := l_sync_template_row;
+      l_sync_row.sync_data_json := TREAT(l_rows.get(i) AS JSON_OBJECT_T).to_clob();
+
+      insert into offline_data_sync values l_sync_row;
+    end loop;
+
+  end process_client_changed_rows;
 
   function ajax_da( 
     p_dynamic_action apex_plugin.t_dynamic_action
@@ -125,6 +165,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
     l_method varchar2(100);
     l_sqlite_col_info_t tt_sqlite_col_info;
 
+    l_filters           apex_exec.t_filters;
     l_context           apex_exec.t_context;
     l_col_info          apex_exec.t_column;
     l_col_info_exec_tab apex_exec.t_columns;
@@ -247,6 +288,51 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
         apex_json.close_array;
 
         apex_json.write('hasMoreRows', apex_exec.has_more_rows( l_context ));
+
+      when 'get_server_changed_rows' then
+        apex_exec.add_filter(
+          p_filters     => l_filters,
+          p_filter_type => apex_exec.c_filter_in,
+          p_column_name => upper(l_pk_colname),
+          p_value       => APEX_APPLICATION.g_x02 
+        );
+
+        l_context :=
+          apex_exec.open_query_context
+          (
+            p_location  => apex_exec.c_location_local_db
+          , p_sql_query => l_source_query
+          , p_filters   => l_filters
+          );
+
+        apex_json.open_array('data'); -- "data": [
+
+        for i in 1 .. apex_exec.get_column_count(l_context)
+        loop
+          l_col_info := apex_exec.get_column(l_context, i);
+          l_col_info_exec_tab(i) := l_col_info;
+        end loop;
+
+        while apex_exec.next_row( p_context => l_context ) 
+        loop
+          apex_json.open_object; -- {
+
+          for i in 1 .. l_col_info_exec_tab.count
+          loop
+            if l_col_info_exec_tab(i).data_type = apex_exec.c_data_type_number then
+              apex_json.write(l_col_info_exec_tab(i).name, apex_exec.get_number( p_context => l_context, p_column_idx => i ) );
+            else
+              apex_json.write(l_col_info_exec_tab(i).name, apex_exec.get_varchar2( p_context => l_context, p_column_idx => i ) );
+            end if;
+          end loop;
+
+          apex_json.close_object; -- }
+        end loop;
+
+        apex_json.close_array;
+
+      when 'sync_client_changed_rows' then
+        process_client_changed_rows();
 
       else
         apex_debug.error( apex_string.format('Unknown method => %0', l_method ) );

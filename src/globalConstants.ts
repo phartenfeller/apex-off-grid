@@ -12,6 +12,8 @@ export enum WorkerMessageType {
   InsertRowsResult = 'insert_rows_result',
   CheckSyncRows = 'check_sync_rows',
   CheckSyncRowsResult = 'check_sync_rows_result',
+  SyncServerRows = 'sync_server_rows',
+  SyncServerRowsResult = 'sync_server_rows_result',
 }
 
 export type WorkerMessageParams = {
@@ -61,6 +63,17 @@ export type CheckSyncRowsResponse = {
   ok: boolean;
   error?: string;
   needsUpdateRows?: (string | number)[];
+};
+
+export type SyncServerRowsMsgData = {
+  storageId: string;
+  storageVersion: number;
+  rows: any[];
+};
+
+export type SyncServerRowsResponse = {
+  ok: boolean;
+  error?: string;
 };
 
 export enum DbStatus {

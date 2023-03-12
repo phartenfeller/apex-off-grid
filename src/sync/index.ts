@@ -2,6 +2,8 @@ import { ajax } from '../apex/ajax';
 import {
   CheckSyncRowsMsgData,
   CheckSyncRowsResponse,
+  SyncServerRowsMsgData,
+  SyncServerRowsResponse,
   WorkerMessageType,
   YELLOW_CONSOLE,
 } from '../globalConstants';
@@ -34,7 +36,10 @@ export default async function syncRows({
       hasMoreRows: boolean;
     };
 
-    apex.debug.info(`fetch Sync Rows ${storageId} v${storageVersion}`, res);
+    apex.debug.info(
+      `fetch sync_checksums Rows ${storageId} v${storageVersion}`,
+      res,
+    );
 
     hasMoreRows = res.hasMoreRows;
     nextRow += pageSize;
@@ -63,6 +68,47 @@ export default async function syncRows({
 
     if (needsUpdateRows && needsUpdateRows.length > 0) {
       apex.debug.info(`%c Needs update rows:`, YELLOW_CONSOLE, needsUpdateRows);
+
+      const chunkSize = pageSize;
+      for (let i = 0; i < needsUpdateRows.length; i += chunkSize) {
+        const chunk = needsUpdateRows.slice(i, i + chunkSize);
+
+        const rows = (await ajax({
+          apex,
+          ajaxId,
+          method: 'get_server_changed_rows',
+          x02: chunk.join(','),
+        })) as {
+          data: any[];
+        };
+
+        apex.debug.info(
+          `fetch get_server_changed_rows Rows ${storageId} v${storageVersion}`,
+          rows,
+        );
+
+        const payload: SyncServerRowsMsgData = {
+          storageId,
+          storageVersion,
+          rows: rows.data,
+        };
+
+        const { data } = await sendMsgToWorker({
+          storageId,
+          storageVersion,
+          messageType: WorkerMessageType.SyncServerRows,
+          data: payload,
+          expectedMessageType: WorkerMessageType.SyncServerRowsResult,
+        });
+
+        const { ok, error } = data as SyncServerRowsResponse;
+        apex.debug.info(`%c SyncServerRows result:`, YELLOW_CONSOLE, data);
+
+        if (!ok) {
+          apex.debug.error(`Could not sync server rows rows: ${error}`);
+          return;
+        }
+      }
     }
   }
 }

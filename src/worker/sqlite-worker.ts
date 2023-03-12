@@ -5,12 +5,14 @@ import {
   InitDbPayloadData,
   InitSourceMsgData,
   InsertRowsMsgData,
+  SyncServerRowsMsgData,
   WorkerMessageParams,
   WorkerMessageType,
 } from '../globalConstants';
 import { initLogLevel, log } from './util/logger';
 import insertRows from './db/util/insertRows';
 import validateSyncRows from './db/util/validateSyncRows';
+import syncServerRows from './db/util/syncServerRows';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
   postMessage(obj);
@@ -85,6 +87,21 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           result = {
             messageId: data.messageId,
             messageType: WorkerMessageType.CheckSyncRowsResult,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+        case WorkerMessageType.SyncServerRows: {
+          const { storageId, storageVersion, rows } =
+            data.data as SyncServerRowsMsgData;
+
+          const res = syncServerRows({ storageId, storageVersion, rows });
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.SyncServerRowsResult,
             data: res,
           };
           sendMsgToMain(result);
