@@ -76,6 +76,10 @@ export function sendMsgToWorker({
       cb,
     });
 
-    worker.postMessage({ messageId, messageType, data });
+    worker.postMessage({
+      messageId,
+      messageType,
+      data: { storageId, storageVersion, ...data },
+    });
   });
 }

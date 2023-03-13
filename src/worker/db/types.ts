@@ -6,3 +6,9 @@ export type Colinfo = {
   datatypeLength?: number;
   isRequired: boolean;
 };
+
+export type ColStructure = {
+  cols: Colinfo[];
+  lastChangedCol: string;
+  pkCol: string;
+};

@@ -1,7 +1,7 @@
 import { InitSourceMsgData } from '../../globalConstants';
 import { log } from '../util/logger';
 import { db } from './initDb';
-import { Colinfo } from './types';
+import { Colinfo, ColStructure } from './types';
 import checkTableExists from './util/checkTableExsists';
 
 const META_TABLE_VERSION = 1;
@@ -97,12 +97,6 @@ export function checkMetaEntryExists(
   return result;
 }
 
-export type ColStructure = {
-  cols: Colinfo[];
-  lastChangedCol: string;
-  pkCol: string;
-};
-
 export function getStorageColumns(
   storageId: string,
   storageVersion: number,
@@ -122,7 +116,7 @@ export function getStorageColumns(
     $storageVersion: storageVersion,
   }) as { colsStr: string; lastChangedCol: string; pkCol: string };
 
-  const info = {
+  const info: ColStructure = {
     lastChangedCol: data.lastChangedCol,
     pkCol: data.pkCol,
     cols: JSON.parse(data.colsStr) as Colinfo[],

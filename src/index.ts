@@ -13,6 +13,7 @@ import {
   YELLOW_CONSOLE,
 } from './globalConstants';
 import { initMsgBus, sendMsgToWorker } from './messageBus';
+import initStorageMethods from './storageMethods';
 import syncRows from './sync';
 import { Colinfo } from './worker/db/types';
 
@@ -244,32 +245,14 @@ async function initStorage({
     return;
   }
 
+  initStorageMethods(storageId, storageVersion, apex);
+
   if (isEmpty === true) {
     fetchAllRows({ ajaxId, storageId, storageVersion });
   } else {
     syncRows({ ajaxId, storageId, storageVersion, apex });
   }
 }
-
-/*
-async function createTable() {
-  await request({
-    f: 'create_table',
-  });
-}
-
-async function queryData() {
-  await request({
-    f: 'query_data',
-  });
-}
-
-async function persist() {
-  await request({
-    f: 'persist',
-  });
-}
-*/
 
 if (!window.hartenfeller_dev) {
   window.hartenfeller_dev = {};
@@ -284,12 +267,9 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
   window.hartenfeller_dev.plugins.sync_offline_data.setFilePrefix =
     setFilePrefix;
   window.hartenfeller_dev.plugins.sync_offline_data.initStorage = initStorage;
-  /*
-  window.hartenfeller_dev.plugins.sync_offline_data.createTable = createTable;
-  window.hartenfeller_dev.plugins.sync_offline_data.queryData = queryData;
-  window.hartenfeller_dev.plugins.sync_offline_data.persist = persist;
-  */
 
   window.hartenfeller_dev.plugins.sync_offline_data.dbStauts =
     DbStatus.NotInitialized;
+
+  window.hartenfeller_dev.plugins.sync_offline_data.storages = {};
 }

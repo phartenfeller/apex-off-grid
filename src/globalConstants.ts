@@ -1,4 +1,4 @@
-import { Colinfo } from './worker/db/types';
+import { Colinfo, ColStructure } from './worker/db/types';
 
 export const YELLOW_CONSOLE = 'color: yellow';
 
@@ -14,12 +14,19 @@ export enum WorkerMessageType {
   CheckSyncRowsResult = 'check_sync_rows_result',
   SyncServerRows = 'sync_server_rows',
   SyncServerRowsResult = 'sync_server_rows_result',
+  GetColInfo = 'get_col_info',
+  GetColInfoResponse = 'get_col_info_response',
 }
 
 export type WorkerMessageParams = {
   messageId: string;
   messageType: WorkerMessageType;
   data?: any;
+};
+
+type BaseRequestData = {
+  storageId: string;
+  storageVersion: number;
 };
 
 export type InitDbMsgData = {
@@ -32,9 +39,7 @@ export type InitDbPayloadData = {
   filePrefix: string;
 };
 
-export type InitSourceMsgData = {
-  storageId: string;
-  storageVersion: number;
+export type InitSourceMsgData = BaseRequestData & {
   colData: Colinfo[];
   pkColname: string;
   lastChangedColname: string;
@@ -46,9 +51,7 @@ export type InitSourceResponse = {
   isEmpty?: boolean;
 };
 
-export type InsertRowsMsgData = {
-  storageId: string;
-  storageVersion: number;
+export type InsertRowsMsgData = BaseRequestData & {
   rows: any[];
 };
 
@@ -65,15 +68,21 @@ export type CheckSyncRowsResponse = {
   needsUpdateRows?: (string | number)[];
 };
 
-export type SyncServerRowsMsgData = {
-  storageId: string;
-  storageVersion: number;
+export type SyncServerRowsMsgData = BaseRequestData & {
   rows: any[];
 };
 
 export type SyncServerRowsResponse = {
   ok: boolean;
   error?: string;
+};
+
+export type GetColInfoMsgData = BaseRequestData;
+
+export type GetColInfoResponse = {
+  ok: boolean;
+  error?: string;
+  colInfo?: ColStructure;
 };
 
 export enum DbStatus {

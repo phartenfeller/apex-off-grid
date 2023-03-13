@@ -2,6 +2,7 @@ import { initDb } from './db/initDb';
 import { initSource, initTables } from './db/userTables';
 import {
   CheckSyncRowsMsgData,
+  GetColInfoMsgData,
   InitDbPayloadData,
   InitSourceMsgData,
   InsertRowsMsgData,
@@ -13,6 +14,7 @@ import { initLogLevel, log } from './util/logger';
 import insertRows from './db/util/insertRows';
 import validateSyncRows from './db/util/validateSyncRows';
 import syncServerRows from './db/util/syncServerRows';
+import { getColInfo } from './db/messageProcessors/storageProcessors';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
   postMessage(obj);
@@ -108,29 +110,20 @@ function sendMsgToMain(obj: WorkerMessageParams) {
 
           break;
         }
-        /*
-      case 'create_table': {
-        const start = Date.now();
-        await createTable();
-        result = Date.now() - start;
-        break;
-      }
-      case 'query_data': {
-        const start = Date.now();
-        const data = await queryTable();
-        console.log('data', data);
-        result = Date.now() - start;
-        break;
-      }
-      case 'persist': {
-        persist();
-        break;
-      }
-      case 'finalize': {
-        result = await finalize();
-        break;
-      }
-      */
+        case WorkerMessageType.GetColInfo: {
+          const { storageId, storageVersion } = data.data as GetColInfoMsgData;
+          const res = getColInfo(storageId, storageVersion);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.GetColInfoResponse,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+
         default:
           console.error(`unrecognized request: "${data?.messageType}"`);
       }
