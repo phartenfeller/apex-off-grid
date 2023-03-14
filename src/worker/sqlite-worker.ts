@@ -3,6 +3,8 @@ import { initSource, initTables } from './db/userTables';
 import {
   CheckSyncRowsMsgData,
   GetColInfoMsgData,
+  GetRowByPkMsgData,
+  GetRowsMsgData,
   InitDbPayloadData,
   InitSourceMsgData,
   InsertRowsMsgData,
@@ -14,7 +16,11 @@ import { initLogLevel, log } from './util/logger';
 import insertRows from './db/util/insertRows';
 import validateSyncRows from './db/util/validateSyncRows';
 import syncServerRows from './db/util/syncServerRows';
-import { getColInfo } from './db/messageProcessors/storageProcessors';
+import {
+  getColInfo,
+  getRowByPk,
+  getRows,
+} from './db/messageProcessors/storageProcessors';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
   postMessage(obj);
@@ -117,6 +123,33 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           result = {
             messageId: data.messageId,
             messageType: WorkerMessageType.GetColInfoResponse,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+        case WorkerMessageType.GetRowByPk: {
+          const { storageId, storageVersion, pk } =
+            data.data as GetRowByPkMsgData;
+          const res = getRowByPk(storageId, storageVersion, pk);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.GetRowByPkResponse,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+        case WorkerMessageType.GetRows: {
+          const props = data.data as GetRowsMsgData;
+          const res = getRows(props);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.GetRowsResponse,
             data: res,
           };
           sendMsgToMain(result);

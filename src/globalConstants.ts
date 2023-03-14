@@ -1,4 +1,4 @@
-import { Colinfo, ColStructure } from './worker/db/types';
+import { Colinfo, ColStructure, DbRow, OrderByDir } from './worker/db/types';
 
 export const YELLOW_CONSOLE = 'color: yellow';
 
@@ -16,6 +16,10 @@ export enum WorkerMessageType {
   SyncServerRowsResult = 'sync_server_rows_result',
   GetColInfo = 'get_col_info',
   GetColInfoResponse = 'get_col_info_response',
+  GetRowByPk = 'get_row_by_pk',
+  GetRowByPkResponse = 'get_row_by_pk_response',
+  GetRows = 'get_rows',
+  GetRowsResponse = 'get_rows_response',
 }
 
 export type WorkerMessageParams = {
@@ -83,6 +87,29 @@ export type GetColInfoResponse = {
   ok: boolean;
   error?: string;
   colInfo?: ColStructure;
+};
+
+export type GetRowByPkMsgData = BaseRequestData & {
+  pk: string | number;
+};
+
+export type GetRowByPkResponse = {
+  ok: boolean;
+  error?: string;
+  row?: DbRow;
+};
+
+export type GetRowsMsgData = BaseRequestData & {
+  offset: number;
+  maxRows?: number;
+  orderByCol?: string;
+  orderByDir?: OrderByDir;
+};
+
+export type GetRowsResponse = {
+  ok: boolean;
+  error?: string;
+  rows?: DbRow[];
 };
 
 export enum DbStatus {

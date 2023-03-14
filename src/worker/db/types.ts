@@ -12,3 +12,7 @@ export type ColStructure = {
   lastChangedCol: string;
   pkCol: string;
 };
+
+export type DbRow = { [key: string]: number | string | undefined | null };
+
+export type OrderByDir = 'asc' | 'desc';

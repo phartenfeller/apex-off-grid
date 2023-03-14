@@ -47,4 +47,9 @@ export default {
     filename: '[name].js',
     clean: true,
   },
+
+  cache: {
+    type: 'filesystem',
+    cacheDirectory: path.resolve(__dirname, '.build_cache'),
+  },
 };
