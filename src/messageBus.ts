@@ -45,6 +45,17 @@ function addCallback({
   cbMap.set(messageId, cb);
 }
 
+const characters =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+function randomId() {
+  let result = '';
+  for (let i = 0; i < 10; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
+
 export function sendMsgToWorker({
   storageId,
   storageVersion,
@@ -59,7 +70,7 @@ export function sendMsgToWorker({
   expectedMessageType?: WorkerMessageType;
 }): Promise<WorkerMessageParams> {
   return new Promise((resolve, reject) => {
-    const messageId = `${storageId}_v${storageVersion}-${Date.now()}`;
+    const messageId = `${storageId}_v${storageVersion}-${randomId()}`;
 
     const cb = (data: WorkerMessageParams) => {
       if (expectedMessageType && data.messageType !== expectedMessageType) {

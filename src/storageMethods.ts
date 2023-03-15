@@ -1,6 +1,7 @@
 import {
   GetColInfoResponse,
   GetRowByPkResponse,
+  GetRowCountResponse,
   GetRowsResponse,
   WorkerMessageType,
 } from './globalConstants';
@@ -94,6 +95,33 @@ async function _getRows({
   return rows;
 }
 
+async function _getRowCount({
+  storageId,
+  storageVersion,
+  apex,
+}: {
+  storageId: string;
+  storageVersion: number;
+  apex: any;
+}) {
+  const { data } = await sendMsgToWorker({
+    storageId,
+    storageVersion,
+    messageType: WorkerMessageType.GetRowCount,
+    data: {},
+    expectedMessageType: WorkerMessageType.GetRowCountResponse,
+  });
+
+  const { ok, error, rowCount } = data as GetRowCountResponse;
+
+  if (!ok) {
+    apex.debug.error(`Could not get rows: ${error}`);
+    return;
+  }
+
+  return rowCount;
+}
+
 export default function initStorageMethods(
   storageId: string,
   storageVersion: number,
@@ -125,5 +153,6 @@ export default function initStorageMethods(
         orderByCol,
         orderByDir,
       }),
+    getRowCount: () => _getRowCount({ storageId, storageVersion, apex }),
   };
 }

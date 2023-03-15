@@ -4,6 +4,7 @@ import {
   CheckSyncRowsMsgData,
   GetColInfoMsgData,
   GetRowByPkMsgData,
+  GetRowCountMsgData,
   GetRowsMsgData,
   InitDbPayloadData,
   InitSourceMsgData,
@@ -19,6 +20,7 @@ import syncServerRows from './db/util/syncServerRows';
 import {
   getColInfo,
   getRowByPk,
+  getRowCount,
   getRows,
 } from './db/messageProcessors/storageProcessors';
 
@@ -150,6 +152,19 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           result = {
             messageId: data.messageId,
             messageType: WorkerMessageType.GetRowsResponse,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+        case WorkerMessageType.GetRowCount: {
+          const props = data.data as GetRowCountMsgData;
+          const res = getRowCount(props);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.GetRowCountResponse,
             data: res,
           };
           sendMsgToMain(result);

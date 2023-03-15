@@ -1,6 +1,8 @@
 import {
   GetColInfoResponse,
   GetRowByPkResponse,
+  GetRowCountMsgData,
+  GetRowCountResponse,
   GetRowsMsgData,
   GetRowsResponse,
 } from '../../../globalConstants';
@@ -112,6 +114,28 @@ export function getRows({
     };
   } catch (err) {
     const msg = `Error getting rows for ${storageId}_v${storageVersion}: ${err}`;
+    log.error(msg);
+    return {
+      ok: false,
+      error: msg,
+    };
+  }
+}
+
+export function getRowCount({
+  storageVersion,
+  storageId,
+}: GetRowCountMsgData): GetRowCountResponse {
+  try {
+    const sql = `select count(*) as rowCount from ${storageId}_v${storageVersion}`;
+    const data = db.selectObject(sql) as { rowCount: number };
+
+    return {
+      ok: true,
+      rowCount: data.rowCount,
+    };
+  } catch (err) {
+    const msg = `Error getting row count for ${storageId}_v${storageVersion}: ${err}`;
     log.error(msg);
     return {
       ok: false,

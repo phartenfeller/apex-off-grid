@@ -20,6 +20,8 @@ export enum WorkerMessageType {
   GetRowByPkResponse = 'get_row_by_pk_response',
   GetRows = 'get_rows',
   GetRowsResponse = 'get_rows_response',
+  GetRowCount = 'get_row_count',
+  GetRowCountResponse = 'get_row_count_response',
 }
 
 export type WorkerMessageParams = {
@@ -110,6 +112,14 @@ export type GetRowsResponse = {
   ok: boolean;
   error?: string;
   rows?: DbRow[];
+};
+
+export type GetRowCountMsgData = BaseRequestData;
+
+export type GetRowCountResponse = {
+  ok: boolean;
+  error?: string;
+  rowCount?: number;
 };
 
 export enum DbStatus {
