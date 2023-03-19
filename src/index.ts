@@ -115,13 +115,14 @@ async function fetchAllRows({
   ajaxId,
   storageId,
   storageVersion,
+  pageSize,
 }: {
   ajaxId: string;
   storageId: string;
   storageVersion: number;
+  pageSize: number;
 }) {
   let hasMoreRows = true;
-  const pageSize = 50;
   let nextRow = 1;
 
   while (hasMoreRows) {
@@ -171,12 +172,14 @@ async function initStorage({
   storageVersion,
   pkColname,
   lastChangedColname,
+  pageSize = 500,
 }: {
   ajaxId: string;
   storageId: string;
   storageVersion: number;
   pkColname: string;
   lastChangedColname: string;
+  pageSize?: number;
 }) {
   if (
     window.hartenfeller_dev.plugins.sync_offline_data.dbStauts !==
@@ -248,10 +251,41 @@ async function initStorage({
   initStorageMethods(storageId, storageVersion, apex);
 
   if (isEmpty === true) {
-    fetchAllRows({ ajaxId, storageId, storageVersion });
+    fetchAllRows({ ajaxId, storageId, storageVersion, pageSize });
   } else {
-    syncRows({ ajaxId, storageId, storageVersion, apex });
+    syncRows({ ajaxId, storageId, storageVersion, apex, pageSize });
   }
+}
+
+function _getStorageKey({
+  storageId,
+  storageVersion,
+}: { storageId: string; storageVersion: number }) {
+  return `${storageId}_v${storageVersion}`;
+}
+
+function _storageIsReady({
+  storageId,
+  storageVersion,
+}: {
+  storageId: string;
+  storageVersion: number;
+}) {
+  const storageKey = _getStorageKey({ storageId, storageVersion });
+
+  if (
+    !window?.hartenfeller_dev?.plugins?.sync_offline_data.dbStauts ||
+    window.hartenfeller_dev.plugins.sync_offline_data.dbStauts !==
+      DbStatus.Initialized
+  ) {
+    return { msg: "Plugin 'sync_offline_data' not ready!", ok: false };
+  }
+
+  if (!window.hartenfeller_dev.plugins.sync_offline_data.storages[storageKey]) {
+    return { msg: `Storage '${storageKey}' not found!`, ok: false };
+  }
+
+  return { ok: true };
 }
 
 if (!window.hartenfeller_dev) {
@@ -272,4 +306,10 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
     DbStatus.NotInitialized;
 
   window.hartenfeller_dev.plugins.sync_offline_data.storages = {};
+
+  window.hartenfeller_dev.plugins.sync_offline_data.getStorageKey =
+    _getStorageKey;
+
+  window.hartenfeller_dev.plugins.sync_offline_data.storageIsReady =
+    _storageIsReady;
 }

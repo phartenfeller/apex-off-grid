@@ -69,17 +69,15 @@ export function getRows({
   maxRows,
   orderByCol,
   orderByDir = 'asc',
+  searchTerm,
 }: GetRowsMsgData): GetRowsResponse {
   try {
-    let sql = `select * from ${storageId}_v${storageVersion} #ORDER_BY# #LIMIT#`;
+    let sql = `select * from ${storageId}_v${storageVersion} #WHERE# #ORDER_BY# #LIMIT#`;
+    const colStructure = getStorageColumns(storageId, storageVersion);
+    const colnames = colStructure.cols.map((c) => c.colname);
 
     if (orderByCol) {
-      const colStructure = getStorageColumns(storageId, storageVersion);
-      if (
-        !colStructure.cols
-          .map((c) => c.colname)
-          .includes(orderByCol.toUpperCase())
-      ) {
+      if (!colnames.includes(orderByCol.toUpperCase())) {
         log.warn(
           `Column "${orderByCol.toUpperCase()}" not found. Skipping order by for ${storageId}_v${storageVersion}`,
         );
@@ -93,7 +91,7 @@ export function getRows({
       sql = sql.replace('#ORDER_BY#', 'order by 1');
     }
 
-    const binds: { [key: string]: number } = {
+    const binds: { [key: string]: number | string } = {
       $limit: maxRows,
     };
 
@@ -102,6 +100,21 @@ export function getRows({
       binds['$offset'] = offset;
     } else {
       sql = sql.replace('#LIMIT#', 'limit $limit');
+    }
+
+    if (searchTerm) {
+      const coalescedCols = colnames
+        .map((c) => `coalesce(${c}, '')`)
+        .join(' || ');
+      sql = sql.replace(
+        '#WHERE#',
+        `where (lower(${coalescedCols}) LIKE $searchTerm)`,
+      );
+      binds['$searchTerm'] = `%${searchTerm
+        .replaceAll('%', '/%')
+        .toLowerCase()}%`;
+    } else {
+      sql = sql.replace('#WHERE#', '');
     }
 
     log.trace('getRows sql:', sql, binds);

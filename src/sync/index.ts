@@ -14,14 +14,15 @@ export default async function syncRows({
   storageId,
   storageVersion,
   apex,
+  pageSize,
 }: {
   ajaxId: string;
   storageId: string;
   storageVersion: number;
   apex: any;
+  pageSize: number;
 }) {
   let hasMoreRows = true;
-  const pageSize = 150;
   let nextRow = 1;
 
   while (hasMoreRows) {

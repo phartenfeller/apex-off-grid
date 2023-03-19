@@ -106,6 +106,7 @@ export type GetRowsMsgData = BaseRequestData & {
   maxRows?: number;
   orderByCol?: string;
   orderByDir?: OrderByDir;
+  searchTerm?: string;
 };
 
 export type GetRowsResponse = {

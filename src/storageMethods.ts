@@ -68,6 +68,7 @@ async function _getRows({
   maxRows,
   orderByCol,
   orderByDir,
+  searchTerm,
 }: {
   storageId: string;
   storageVersion: number;
@@ -76,12 +77,13 @@ async function _getRows({
   maxRows: number;
   orderByCol?: string;
   orderByDir?: OrderByDir;
+  searchTerm?: string;
 }) {
   const { data } = await sendMsgToWorker({
     storageId,
     storageVersion,
     messageType: WorkerMessageType.GetRows,
-    data: { offset, maxRows, orderByCol, orderByDir },
+    data: { offset, maxRows, orderByCol, orderByDir, searchTerm },
     expectedMessageType: WorkerMessageType.GetRowsResponse,
   });
 
@@ -138,11 +140,13 @@ export default function initStorageMethods(
       maxRows = 100,
       orderByCol,
       orderByDir,
+      searchTerm,
     }: {
       offset: number;
       maxRows?: number;
       orderByCol?: string;
       orderByDir?: OrderByDir;
+      searchTerm?: string;
     }) =>
       _getRows({
         storageId,
@@ -152,6 +156,7 @@ export default function initStorageMethods(
         maxRows,
         orderByCol,
         orderByDir,
+        searchTerm,
       }),
     getRowCount: () => _getRowCount({ storageId, storageVersion, apex }),
   };

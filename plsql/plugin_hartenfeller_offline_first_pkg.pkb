@@ -22,6 +22,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
     l_storage_version      p_dynamic_action.attribute_02%type := p_dynamic_action.attribute_02;
     l_pk_colname           p_dynamic_action.attribute_04%type := p_dynamic_action.attribute_04;
     l_last_changed_colname p_dynamic_action.attribute_05%type := p_dynamic_action.attribute_05;
+    l_page_size            p_dynamic_action.attribute_06%type := p_dynamic_action.attribute_06;
   begin
     if apex_application.g_debug then
         apex_plugin_util.debug_dynamic_action
@@ -41,6 +42,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
                                   apex_javascript.add_attribute( p_name => 'storageVersion', p_value => l_storage_version ) ||
                                   apex_javascript.add_attribute( p_name => 'pkColname', p_value => l_pk_colname ) ||
                                   apex_javascript.add_attribute( p_name => 'lastChangedColname', p_value => l_last_changed_colname ) ||
+                                  apex_javascript.add_attribute( p_name => 'pageSize', p_value => l_page_size ) || 
                                   '}), 1000)  }';
 
     apex_debug.message('render');

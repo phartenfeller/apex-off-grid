@@ -4,6 +4,7 @@ const _initAPEXRegion = ({
   headerFc,
   storageId,
   storageVersion,
+  valuePageItem,
 }) => {
   const region = `#${regionId}`;
   const wrapper = document.querySelector(`${region}_wrapper`);
@@ -20,6 +21,7 @@ const _initAPEXRegion = ({
   el.headerFc = headerFc;
   el.storageId = storageId;
   el.storageVersion = storageVersion;
+  el.valuePageItem = valuePageItem;
 
   wrapper.appendChild(el);
 
