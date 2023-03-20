@@ -5,11 +5,15 @@ import {
   GetRowCountResponse,
   GetRowsMsgData,
   GetRowsResponse,
+  WriteChangesMsgData,
+  WriteChangesResponse,
 } from '../../../globalConstants';
 import { log } from '../../util/logger';
 import { db } from '../initDb';
 import { getStorageColumns } from '../metaTable';
-import { DbRow } from '../types';
+import { ColStructure, DbRow } from '../types';
+
+const CHANGE_TYPE = '__change_type';
 
 export function getColInfo(
   storageId: string,
@@ -149,6 +153,141 @@ export function getRowCount({
     };
   } catch (err) {
     const msg = `Error getting row count for ${storageId}_v${storageVersion}: ${err}`;
+    log.error(msg);
+    return {
+      ok: false,
+      error: msg,
+    };
+  }
+}
+
+function rowsDiffer(a: DbRow, b: DbRow, userCols: string[]): boolean {
+  for (const col of userCols) {
+    if (a[col] !== b[col]) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function fixDataTypes({
+  row,
+  colStructure,
+}: { row: DbRow; colStructure: ColStructure }): DbRow {
+  for (const col of colStructure.cols) {
+    if (!row[col.colname] && row[col.colname] !== '0') {
+      row[col.colname] = null;
+    } else if (col.datatype === 'real') {
+      row[col.colname] = parseFloat(row[col.colname] as string);
+    }
+  }
+
+  return row;
+}
+
+export function writeChanges({
+  storageId,
+  storageVersion,
+  rows,
+}: WriteChangesMsgData): WriteChangesResponse {
+  let loggedUpadteQuery = false;
+  let ok = true;
+
+  try {
+    const colStructure = getStorageColumns(storageId, storageVersion);
+    const userCols = colStructure.cols
+      .map((c) => c.colname)
+      .filter(
+        (c) => ![colStructure.pkCol, colStructure.lastChangedCol].includes(c),
+      );
+
+    for (let row of rows) {
+      row = fixDataTypes({ row, colStructure });
+      if (!row[CHANGE_TYPE]) {
+        ok = false;
+        log.error(
+          `Row has no "${CHANGE_TYPE}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
+          row,
+        );
+
+        continue;
+      } else if (!['I', 'U', 'D'].includes(row[CHANGE_TYPE] as string)) {
+        ok = false;
+        log.error(
+          `Row has invalid "${CHANGE_TYPE}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
+          row,
+        );
+
+        continue;
+      }
+
+      switch (row[CHANGE_TYPE]) {
+        case 'U':
+          const dbRow = getRowByPk(
+            storageId,
+            storageVersion,
+            row[colStructure.pkCol],
+          );
+
+          const diffs = rowsDiffer(row, dbRow.row, userCols);
+
+          if (!diffs) {
+            log.info(
+              `Row ${
+                row[colStructure.pkCol]
+              } has no changes (${storageId}_v${storageVersion}). Skipping...`,
+              row,
+            );
+            continue;
+          }
+
+          const sql = `
+            update ${storageId}_v${storageVersion}
+            set ${userCols.map((c) => `${c} = $${c}`).join(',\n')}
+              , ${colStructure.lastChangedCol} = $${colStructure.lastChangedCol}
+            where ${colStructure.pkCol} = $${colStructure.pkCol}
+          `;
+
+          const binds: DbRow = {};
+          for (const { colname } of colStructure.cols) {
+            binds[`$${colname}`] = row[colname];
+          }
+
+          binds[`$${colStructure.lastChangedCol}`] = new Date().getTime();
+
+          if (!loggedUpadteQuery) {
+            log.trace('writeChanges update sql:', sql, binds);
+            loggedUpadteQuery = true;
+          }
+          const stmnt = db.prepare(sql);
+          try {
+            stmnt.bind(binds);
+            stmnt.stepReset();
+          } catch (err) {
+            stmnt.finalize();
+            ok = false;
+            log.error(
+              `Error updating row (${storageId}_v${storageVersion}):`,
+              err,
+              sql,
+              binds,
+            );
+          }
+          stmnt.finalize();
+
+          break;
+      }
+    }
+
+    return {
+      ok,
+      error: ok
+        ? undefined
+        : 'One or more rows failed to process. See browser console for more info',
+    };
+  } catch (err) {
+    const msg = `Error writing changes for ${storageId}_v${storageVersion}: ${err}`;
     log.error(msg);
     return {
       ok: false,

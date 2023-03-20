@@ -6,7 +6,7 @@ import {
   WorkerMessageType,
 } from './globalConstants';
 import { sendMsgToWorker } from './messageBus';
-import { OrderByDir } from './worker/db/types';
+import { DbRow, OrderByDir } from './worker/db/types';
 
 async function _getColInfo(
   storageId: string,
@@ -124,6 +124,40 @@ async function _getRowCount({
   return rowCount;
 }
 
+async function _writeChanges({
+  storageId,
+  storageVersion,
+  rows,
+  apex,
+}: {
+  storageId: string;
+  storageVersion: number;
+  rows: DbRow[];
+  apex: any;
+}) {
+  if (!rows?.length || rows.length === 0) {
+    apex.debug.error('Could not write changes. No rows provided.');
+    return;
+  }
+
+  const { data } = await sendMsgToWorker({
+    storageId,
+    storageVersion,
+    messageType: WorkerMessageType.WriteChanges,
+    data: { rows },
+    expectedMessageType: WorkerMessageType.WriteChangesResponse,
+  });
+
+  const { ok, error } = data as GetRowCountResponse;
+
+  if (!ok) {
+    apex.debug.error(`Could not write changes: ${error}`);
+    return;
+  }
+
+  return { ok, error };
+}
+
 export default function initStorageMethods(
   storageId: string,
   storageVersion: number,
@@ -159,5 +193,7 @@ export default function initStorageMethods(
         searchTerm,
       }),
     getRowCount: () => _getRowCount({ storageId, storageVersion, apex }),
+    writeChanges: (rows: DbRow[]) =>
+      _writeChanges({ storageId, storageVersion, rows, apex }),
   };
 }

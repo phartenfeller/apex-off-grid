@@ -22,6 +22,8 @@ export enum WorkerMessageType {
   GetRowsResponse = 'get_rows_response',
   GetRowCount = 'get_row_count',
   GetRowCountResponse = 'get_row_count_response',
+  WriteChanges = 'write_changes',
+  WriteChangesResponse = 'write_changes_response',
 }
 
 export type WorkerMessageParams = {
@@ -121,6 +123,15 @@ export type GetRowCountResponse = {
   ok: boolean;
   error?: string;
   rowCount?: number;
+};
+
+export type WriteChangesMsgData = BaseRequestData & {
+  rows: DbRow[];
+};
+
+export type WriteChangesResponse = {
+  ok: boolean;
+  error?: string;
 };
 
 export enum DbStatus {

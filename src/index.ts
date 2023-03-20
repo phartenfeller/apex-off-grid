@@ -305,6 +305,10 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
   window.hartenfeller_dev.plugins.sync_offline_data.dbStauts =
     DbStatus.NotInitialized;
 
+  window.hartenfeller_dev.plugins.sync_offline_data.constants = {
+    COLNAME_CHANGE_TYPE: '__change_type',
+  };
+
   window.hartenfeller_dev.plugins.sync_offline_data.storages = {};
 
   window.hartenfeller_dev.plugins.sync_offline_data.getStorageKey =

@@ -12,6 +12,7 @@ import {
   SyncServerRowsMsgData,
   WorkerMessageParams,
   WorkerMessageType,
+  WriteChangesMsgData,
 } from '../globalConstants';
 import { initLogLevel, log } from './util/logger';
 import insertRows from './db/util/insertRows';
@@ -22,6 +23,7 @@ import {
   getRowByPk,
   getRowCount,
   getRows,
+  writeChanges,
 } from './db/messageProcessors/storageProcessors';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
@@ -165,6 +167,19 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           result = {
             messageId: data.messageId,
             messageType: WorkerMessageType.GetRowCountResponse,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+        case WorkerMessageType.WriteChanges: {
+          const props = data.data as WriteChangesMsgData;
+          const res = await writeChanges(props);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.WriteChangesResponse,
             data: res,
           };
           sendMsgToMain(result);
