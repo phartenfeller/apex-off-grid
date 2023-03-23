@@ -1,4 +1,10 @@
-import { InitSourceMsgData } from '../../globalConstants';
+import {
+  GetLastSyncMsgData,
+  GetLastSyncResponse,
+  InitSourceMsgData,
+  SyncDoneMsgData,
+  SyncDoneResponse,
+} from '../../globalConstants';
 import { log } from '../util/logger';
 import { db } from './initDb';
 import { Colinfo, ColStructure } from './types';
@@ -132,4 +138,48 @@ export function getPkColType(structure: ColStructure) {
     (col) => col.colname === structure.pkCol,
   ) as Colinfo;
   return pkCol.datatype;
+}
+
+export function getLastSync({
+  storageId,
+  storageVersion,
+}: GetLastSyncMsgData): GetLastSyncResponse {
+  const sql = `select last_sync as lastSync from ${META_TABLE} where storage_id = $storageId and storage_version = $storageVersion;`;
+  const binds = {
+    $storageId: storageId,
+    $storageVersion: storageVersion,
+  };
+  log.trace('getLastSync sql:', sql, binds);
+
+  try {
+    const data = db.selectObject(sql, binds) as { lastSync: number };
+
+    log.trace('getLastSync result:', data);
+
+    return { ok: true, lastSync: data.lastSync };
+  } catch (e) {
+    log.error('getLastSync error:', e);
+    return { ok: false, lastSync: 0, error: e.message };
+  }
+}
+
+export function updateLastSync({
+  storageId,
+  storageVersion,
+}: SyncDoneMsgData): SyncDoneResponse {
+  const sql = `update ${META_TABLE} set last_sync = $lastSync where storage_id = $storageId and storage_version = $storageVersion;`;
+  const binds = {
+    $storageId: storageId,
+    $storageVersion: storageVersion,
+    $lastSync: Date.now(),
+  };
+  log.trace('updateLastSync sql:', sql, binds);
+
+  try {
+    db.exec(sql, { bind: binds });
+    return { ok: true };
+  } catch (e) {
+    log.error('updateLastSync error:', e);
+    return { ok: false, error: e.message };
+  }
 }

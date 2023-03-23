@@ -15,6 +15,14 @@ import { ColStructure, DbRow } from '../types';
 
 const CHANGE_TYPE = '__change_type';
 
+function prepareSearchTerm(searchTerm: string, colnames: string[]) {
+  const coalescedCols = colnames.map((c) => `coalesce(${c}, '')`).join(' || ');
+  return {
+    where: `where (lower(${coalescedCols}) LIKE $searchTerm)`,
+    bindVal: `%${searchTerm.replaceAll('%', '/%').toLowerCase()}%`,
+  };
+}
+
 export function getColInfo(
   storageId: string,
   storageVersion: number,
@@ -107,16 +115,9 @@ export function getRows({
     }
 
     if (searchTerm) {
-      const coalescedCols = colnames
-        .map((c) => `coalesce(${c}, '')`)
-        .join(' || ');
-      sql = sql.replace(
-        '#WHERE#',
-        `where (lower(${coalescedCols}) LIKE $searchTerm)`,
-      );
-      binds['$searchTerm'] = `%${searchTerm
-        .replaceAll('%', '/%')
-        .toLowerCase()}%`;
+      const { where, bindVal } = prepareSearchTerm(searchTerm, colnames);
+      sql = sql.replace('#WHERE#', where);
+      binds['$searchTerm'] = bindVal;
     } else {
       sql = sql.replace('#WHERE#', '');
     }
@@ -142,10 +143,28 @@ export function getRows({
 export function getRowCount({
   storageVersion,
   storageId,
+  searchTerm,
 }: GetRowCountMsgData): GetRowCountResponse {
   try {
-    const sql = `select count(*) as rowCount from ${storageId}_v${storageVersion}`;
-    const data = db.selectObject(sql) as { rowCount: number };
+    let sql = `select count(*) as rowCount from ${storageId}_v${storageVersion} #WHERE#`;
+
+    const binds: DbRow = {};
+
+    if (searchTerm) {
+      const colStrucure = getStorageColumns(storageId, storageVersion);
+      const colnames = colStrucure.cols.map((c) => c.colname);
+      const { where, bindVal } = prepareSearchTerm(searchTerm, colnames);
+      sql = sql.replace('#WHERE#', where);
+      binds['$searchTerm'] = bindVal;
+    } else {
+      sql = sql.replace('#WHERE#', '');
+    }
+
+    log.trace('getRowCount sql:', sql, binds);
+    const keyCount = Object.keys(binds).length;
+    const data = db.selectObject(sql, keyCount > 0 ? binds : undefined) as {
+      rowCount: number;
+    };
 
     return {
       ok: true,

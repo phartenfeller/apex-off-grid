@@ -23,6 +23,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
     l_pk_colname           p_dynamic_action.attribute_04%type := p_dynamic_action.attribute_04;
     l_last_changed_colname p_dynamic_action.attribute_05%type := p_dynamic_action.attribute_05;
     l_page_size            p_dynamic_action.attribute_06%type := p_dynamic_action.attribute_06;
+    l_sync_timeout         p_dynamic_action.attribute_07%type := p_dynamic_action.attribute_07;
   begin
     if apex_application.g_debug then
         apex_plugin_util.debug_dynamic_action
@@ -42,7 +43,8 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
                                   apex_javascript.add_attribute( p_name => 'storageVersion', p_value => l_storage_version ) ||
                                   apex_javascript.add_attribute( p_name => 'pkColname', p_value => l_pk_colname ) ||
                                   apex_javascript.add_attribute( p_name => 'lastChangedColname', p_value => l_last_changed_colname ) ||
-                                  apex_javascript.add_attribute( p_name => 'pageSize', p_value => l_page_size ) || 
+                                  apex_javascript.add_attribute( p_name => 'pageSize', p_value => to_number(l_page_size) ) || 
+                                  apex_javascript.add_attribute( p_name => 'syncTimeoutMins', p_value => to_number(l_sync_timeout) ) || 
                                   '}), 1000)  }';
 
     apex_debug.message('render');
@@ -119,10 +121,80 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
     for i in 1..apex_application.g_json.count loop
       l_str_tab.extend();
       l_str_tab(i) := apex_application.g_json(i);
+      apex_debug.trace('json ('||i||'): '|| l_str_tab(i));
     end loop;
     l_clob := apex_string.join_clob( p_table => l_str_tab, p_sep => null );
     return l_clob;
   end get_json_clob;
+
+
+  procedure get_server_changed_rows (
+    pi_pk_colname           in varchar2
+  , pi_source_query         in varchar2
+  )
+  as
+    l_clob              clob;
+    l_json              json_object_t;
+    l_apex_json         apex_json.t_values;
+    l_str_arr           apex_t_varchar2;
+    l_context           apex_exec.t_context;
+    l_filters           apex_exec.t_filters;
+    l_col_info          apex_exec.t_column;
+    l_col_info_exec_tab apex_exec.t_columns;
+  begin
+    l_clob := get_json_clob();
+    apex_json.parse
+      (
+        p_values => l_apex_json
+      , p_source => l_clob
+      );
+
+    l_clob    := apex_json.get_clob( p_values => l_apex_json, p_path => 'regions[1].data.ids' ); 
+    l_str_arr := apex_string.split(l_clob, ':');
+    apex_debug.trace('get_server_changed_rows array items: ' || l_str_arr.count);
+
+    apex_exec.add_filter(
+      p_filters     => l_filters,
+      p_filter_type => apex_exec.c_filter_in,
+      p_column_name => upper(pi_pk_colname),
+      p_values      => l_str_arr
+    );
+
+    l_context :=
+      apex_exec.open_query_context
+      (
+        p_location  => apex_exec.c_location_local_db
+      , p_sql_query => pi_source_query
+      , p_filters   => l_filters
+      );
+
+    apex_json.open_array('data'); -- "data": [
+
+    for i in 1 .. apex_exec.get_column_count(l_context)
+    loop
+      l_col_info := apex_exec.get_column(l_context, i);
+      l_col_info_exec_tab(i) := l_col_info;
+    end loop;
+
+    while apex_exec.next_row( p_context => l_context ) 
+    loop
+      apex_json.open_object; -- {
+
+      for i in 1 .. l_col_info_exec_tab.count
+      loop
+        if l_col_info_exec_tab(i).data_type = apex_exec.c_data_type_number then
+          apex_json.write(l_col_info_exec_tab(i).name, apex_exec.get_number( p_context => l_context, p_column_idx => i ) );
+        else
+          apex_json.write(l_col_info_exec_tab(i).name, apex_exec.get_varchar2( p_context => l_context, p_column_idx => i ) );
+        end if;
+      end loop;
+
+      apex_json.close_object; -- }
+    end loop;
+
+    apex_json.close_array;
+  end get_server_changed_rows;
+
 
   procedure process_client_changed_rows
   as
@@ -150,6 +222,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
     end loop;
 
   end process_client_changed_rows;
+
 
   function ajax_da( 
     p_dynamic_action apex_plugin.t_dynamic_action
@@ -292,11 +365,20 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
         apex_json.write('hasMoreRows', apex_exec.has_more_rows( l_context ));
 
       when 'get_server_changed_rows' then
+        get_server_changed_rows(
+          pi_pk_colname => l_pk_colname,
+          pi_source_query => l_source_query
+        );
+        /*
+        l_clob      := get_json_clob();
+        l_str_arr   := apex_string.split(l_clob, ':');
+        apex_debug.trace('get_server_changed_rows array items: ' || l_str_arr.count);
+
         apex_exec.add_filter(
           p_filters     => l_filters,
           p_filter_type => apex_exec.c_filter_in,
           p_column_name => upper(l_pk_colname),
-          p_value       => APEX_APPLICATION.g_x02 
+          p_values      => l_str_arr
         );
 
         l_context :=
@@ -332,6 +414,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
         end loop;
 
         apex_json.close_array;
+        */
 
       when 'sync_client_changed_rows' then
         process_client_changed_rows();

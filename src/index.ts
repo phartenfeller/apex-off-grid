@@ -14,7 +14,7 @@ import {
 } from './globalConstants';
 import { initMsgBus, sendMsgToWorker } from './messageBus';
 import initStorageMethods from './storageMethods';
-import syncRows from './sync';
+import { syncRows, getLastSync } from './sync';
 import { Colinfo } from './worker/db/types';
 
 declare global {
@@ -173,6 +173,7 @@ async function initStorage({
   pkColname,
   lastChangedColname,
   pageSize = 500,
+  syncTimeoutMins = 60,
 }: {
   ajaxId: string;
   storageId: string;
@@ -180,6 +181,7 @@ async function initStorage({
   pkColname: string;
   lastChangedColname: string;
   pageSize?: number;
+  syncTimeoutMins?: number;
 }) {
   if (
     window.hartenfeller_dev.plugins.sync_offline_data.dbStauts !==
@@ -253,7 +255,16 @@ async function initStorage({
   if (isEmpty === true) {
     fetchAllRows({ ajaxId, storageId, storageVersion, pageSize });
   } else {
-    syncRows({ ajaxId, storageId, storageVersion, apex, pageSize });
+    const lastSync = await getLastSync({ storageId, storageVersion });
+    if (!lastSync || lastSync < Date.now() - syncTimeoutMins * 60 * 1000) {
+      syncRows({ ajaxId, storageId, storageVersion, apex, pageSize });
+    } else {
+      apex.debug.info(
+        `Skip sync for ${storageId} v${storageVersion} as it was synced in the last ${syncTimeoutMins} minutes: ${lastSync} (${new Date(
+          lastSync,
+        ).toLocaleString()})`,
+      );
+    }
   }
 }
 

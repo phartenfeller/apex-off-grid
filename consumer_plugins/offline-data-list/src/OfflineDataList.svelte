@@ -15,6 +15,7 @@
   let storageKey = "";
   let lastPage = -1;
   let initialized = false;
+  let noDataFound = false;
   let currentPage = 1;
   let currentPageItems = [];
   let pkCol = "";
@@ -26,6 +27,22 @@
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
+  }
+
+  async function resetState() {
+    // reset saved results
+    pages = new Map();
+    lastPage = -1;
+    currentPage = 1;
+
+    const rowCount =
+      await window.hartenfeller_dev.plugins.sync_offline_data.storages[
+        storageKey
+      ].getRowCount({ searchTerm });
+
+    noDataFound = rowCount === 0;
+
+    lastPage = Math.ceil(rowCount / pageSize);
   }
 
   async function getStorageInfo() {
@@ -65,27 +82,18 @@
       return;
     }
 
-    const promises = [
-      window.hartenfeller_dev.plugins.sync_offline_data.storages[
+    const colInfo =
+      await window.hartenfeller_dev.plugins.sync_offline_data.storages[
         storageKey
-      ].getColInfo(),
-      window.hartenfeller_dev.plugins.sync_offline_data.storages[
-        storageKey
-      ].getRowCount(),
-    ];
+      ].getColInfo();
 
-    const [colInfo, rowCount] = await Promise.all(promises);
-
-    return {
-      colInfo,
-      rowCount,
-    };
+    return colInfo;
   }
 
   async function fetchMoreRows(pageNo) {
     const offset = (pageNo - 1) * pageSize;
 
-    console.log("fetchMoreRows", { offset, pageSize, pageNo });
+    console.log("fetchMoreRows", { offset, pageSize, pageNo, searchTerm });
     const data =
       await window.hartenfeller_dev.plugins.sync_offline_data.storages[
         storageKey
@@ -145,8 +153,8 @@
     });
 
     await wait(500);
-    const { colInfo, rowCount } = await getStorageInfo();
-    lastPage = Math.ceil(rowCount / pageSize);
+    const colInfo = await getStorageInfo();
+    await resetState();
     pkCol = colInfo.pkCol;
     await addPage(1);
     initialized = true;
@@ -174,11 +182,8 @@
   function handleSearch() {
     // depounce input
     clearTimeout(timer);
-    timer = setTimeout(() => {
-      // reset saved results
-      pages = new Map();
-      lastPage = -1;
-      currentPage = 1;
+    timer = setTimeout(async () => {
+      await resetState();
 
       addPage(1);
     }, 250);
@@ -189,7 +194,7 @@
   {#if !initialized}
     <p style="margin: 8px;">Loading...</p>
   {:else}
-    <div>
+    <div style="display: flex; justify-content: center;">
       <input
         type="search"
         placeholder="Search"
@@ -198,56 +203,60 @@
         on:input={handleSearch}
       />
     </div>
-    <ul class="p-odl-ul">
-      {#each currentPageItems as { title, id }}
-        <li class="p-odl-li">
+    {#if noDataFound}
+      <p style="margin: 8px;">No data found</p>
+    {:else}
+      <ul class="p-odl-ul">
+        {#each currentPageItems as { title, id }}
+          <li class="p-odl-li">
+            <button
+              type="button"
+              on:click={handleClick}
+              data-id={id}
+              class="p-odl-btn"
+              class:p-odl-btn-active={activeId == id}
+            >
+              {title}
+            </button>
+          </li>
+        {/each}
+      </ul>
+      <div class="p-odl-button-container">
+        <div>
           <button
+            id={`${regionId}_first_page_btn`}
+            class="p-odl-apex-btn"
             type="button"
-            on:click={handleClick}
-            data-id={id}
-            class="p-odl-btn"
-            class:p-odl-btn-active={activeId == id}
+            on:click={gotoPage(currentPage / currentPage)}
+            disabled={currentPage === 1}>{"<<"}</button
           >
-            {title}
-          </button>
-        </li>
-      {/each}
-    </ul>
-    <div class="p-odl-button-container">
-      <div>
-        <button
-          id={`${regionId}_first_page_btn`}
-          class="p-odl-apex-btn"
-          type="button"
-          on:click={gotoPage(currentPage / currentPage)}
-          disabled={currentPage === 1}>{"<<"}</button
-        >
-        <button
-          id={`${regionId}_prev_page_btn`}
-          class="p-odl-apex-btn"
-          type="button"
-          on:click={gotoPage(currentPage - 1)}
-          disabled={currentPage === 1}>{"<"}</button
-        >
-        <span style="padding: 0px 4px">
-          Page {currentPage}
-        </span>
-        <button
-          id={`${regionId}_next_page_btn`}
-          class="p-odl-apex-btn"
-          type="button"
-          on:click={gotoPage(currentPage + 1)}
-          disabled={currentPage === lastPage}>{">"}</button
-        >
-        <button
-          id={`${regionId}_last_page_btn`}
-          class="p-odl-apex-btn"
-          type="button"
-          on:click={gotoPage(lastPage)}
-          disabled={currentPage === lastPage}>{">>"}</button
-        >
+          <button
+            id={`${regionId}_prev_page_btn`}
+            class="p-odl-apex-btn"
+            type="button"
+            on:click={gotoPage(currentPage - 1)}
+            disabled={currentPage === 1}>{"<"}</button
+          >
+          <span style="padding: 0px 4px">
+            Page {currentPage}
+          </span>
+          <button
+            id={`${regionId}_next_page_btn`}
+            class="p-odl-apex-btn"
+            type="button"
+            on:click={gotoPage(currentPage + 1)}
+            disabled={currentPage === lastPage}>{">"}</button
+          >
+          <button
+            id={`${regionId}_last_page_btn`}
+            class="p-odl-apex-btn"
+            type="button"
+            on:click={gotoPage(lastPage)}
+            disabled={currentPage === lastPage}>{">>"}</button
+          >
+        </div>
       </div>
-    </div>
+    {/if}
   {/if}
 </div>
 
@@ -470,9 +479,9 @@
     transition: background-color 0.2s ease, border-color 0.2s ease,
       box-shadow 0.2s ease, color 0.2s ease;
     vertical-align: top;
-    width: 50ch;
+    width: 90%;
     padding: 9px;
-    margin: 12px;
+    margin: 12px 0px;
   }
 
   @media (prefers-reduced-motion) {

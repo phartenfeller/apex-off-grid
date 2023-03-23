@@ -5,13 +5,22 @@ export type AjaxParams = {
   x02?: any;
   x03?: any;
   x04?: any;
+  json?: any;
 };
 
-export function ajax({ apex, ajaxId, method, x02, x03, x04 }: AjaxParams) {
+export function ajax({
+  apex,
+  ajaxId,
+  method,
+  x02,
+  x03,
+  x04,
+  json,
+}: AjaxParams) {
   return new Promise((resolve, reject) => {
     apex.server.plugin(
       ajaxId,
-      { x01: method, x02, x03, x04 },
+      { regions: [{ data: json }], x01: method, x02, x03, x04 },
       {
         success(data: any) {
           apex.debug.info(`Success (${method}):`, data);

@@ -3,6 +3,7 @@ import { initSource, initTables } from './db/userTables';
 import {
   CheckSyncRowsMsgData,
   GetColInfoMsgData,
+  GetLastSyncMsgData,
   GetRowByPkMsgData,
   GetRowCountMsgData,
   GetRowsMsgData,
@@ -25,6 +26,7 @@ import {
   getRows,
   writeChanges,
 } from './db/messageProcessors/storageProcessors';
+import { getLastSync, updateLastSync } from './db/metaTable';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
   postMessage(obj);
@@ -180,6 +182,34 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           result = {
             messageId: data.messageId,
             messageType: WorkerMessageType.WriteChangesResponse,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+
+        case WorkerMessageType.GetLastSync: {
+          const props = data.data as GetLastSyncMsgData;
+          const res = getLastSync(props);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.GetLastSyncResult,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+
+        case WorkerMessageType.SyncDone: {
+          const props = data.data as GetLastSyncMsgData;
+          const res = updateLastSync(props);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.SyncDoneResult,
             data: res,
           };
           sendMsgToMain(result);

@@ -24,6 +24,10 @@ export enum WorkerMessageType {
   GetRowCountResponse = 'get_row_count_response',
   WriteChanges = 'write_changes',
   WriteChangesResponse = 'write_changes_response',
+  GetLastSync = 'get_last_sync',
+  GetLastSyncResult = 'get_last_sync_result',
+  SyncDone = 'sync_done',
+  SyncDoneResult = 'sync_done_result',
 }
 
 export type WorkerMessageParams = {
@@ -117,7 +121,9 @@ export type GetRowsResponse = {
   rows?: DbRow[];
 };
 
-export type GetRowCountMsgData = BaseRequestData;
+export type GetRowCountMsgData = BaseRequestData & {
+  searchTerm?: string;
+};
 
 export type GetRowCountResponse = {
   ok: boolean;
@@ -130,6 +136,21 @@ export type WriteChangesMsgData = BaseRequestData & {
 };
 
 export type WriteChangesResponse = {
+  ok: boolean;
+  error?: string;
+};
+
+export type GetLastSyncMsgData = BaseRequestData;
+
+export type GetLastSyncResponse = {
+  ok: boolean;
+  error?: string;
+  lastSync?: number;
+};
+
+export type SyncDoneMsgData = BaseRequestData;
+
+export type SyncDoneResponse = {
   ok: boolean;
   error?: string;
 };

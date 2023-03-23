@@ -15,23 +15,38 @@ export default function syncServerRows({
   try {
     const structure = getStorageColumns(storageId, storageVersion);
 
-    let sql = `update ${storageId}_v${storageVersion} set 
-                  #COLUMNS#
-                where ${structure.pkCol} = $${structure.pkCol};`;
+    let sql = `
+      insert into ${storageId}_v${storageVersion} (
+        #INSERT_COLS#
+      ) values (
+        #INSERT_VALUES#
+      )
+      on conflict (${structure.pkCol}) do
+      update set 
+                  #UPDATE_ASSIGNM#
+                where ${structure.pkCol} = excluded.${structure.pkCol};`;
 
-    const colsStatements: string[] = [];
+    const insertCols: string[] = [];
+    const insertBinds: string[] = [];
+    const updateAssignments: string[] = [];
 
     for (let i = 0; i < structure.cols.length; i++) {
       if (structure.cols[i].colname === structure.pkCol) {
+        insertCols.push(structure.cols[i].colname);
+        insertBinds.push(`$${structure.cols[i].colname}`);
         continue;
       }
 
-      colsStatements.push(
-        `${structure.cols[i].colname} = $${structure.cols[i].colname}`,
+      insertCols.push(structure.cols[i].colname);
+      insertBinds.push(`$${structure.cols[i].colname}`);
+      updateAssignments.push(
+        `${structure.cols[i].colname} = excluded.${structure.cols[i].colname}`,
       );
     }
 
-    sql = sql.replace('#COLUMNS#', colsStatements.join(',\n '));
+    sql = sql.replace('#INSERT_COLS#', insertCols.join(',\n '));
+    sql = sql.replace('#INSERT_VALUES#', insertBinds.join(',\n '));
+    sql = sql.replace('#UPDATE_ASSIGNM#', updateAssignments.join(',\n '));
     log.trace('syncServerRows update sql:', sql);
 
     // add prefix $ to all keys

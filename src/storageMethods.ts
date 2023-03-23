@@ -101,16 +101,18 @@ async function _getRowCount({
   storageId,
   storageVersion,
   apex,
+  searchTerm,
 }: {
   storageId: string;
   storageVersion: number;
   apex: any;
+  searchTerm?: string;
 }) {
   const { data } = await sendMsgToWorker({
     storageId,
     storageVersion,
     messageType: WorkerMessageType.GetRowCount,
-    data: {},
+    data: { searchTerm },
     expectedMessageType: WorkerMessageType.GetRowCountResponse,
   });
 
@@ -192,7 +194,8 @@ export default function initStorageMethods(
         orderByDir,
         searchTerm,
       }),
-    getRowCount: () => _getRowCount({ storageId, storageVersion, apex }),
+    getRowCount: ({ searchTerm }: { searchTerm: string }) =>
+      _getRowCount({ storageId, storageVersion, apex, searchTerm }),
     writeChanges: (rows: DbRow[]) =>
       _writeChanges({ storageId, storageVersion, rows, apex }),
   };

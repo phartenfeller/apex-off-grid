@@ -9,7 +9,44 @@ import {
 } from '../globalConstants';
 import { sendMsgToWorker } from '../messageBus';
 
-export default async function syncRows({
+export async function getLastSync({
+  storageId,
+  storageVersion,
+}: { storageId: string; storageVersion: number }) {
+  const { data } = await sendMsgToWorker({
+    storageId,
+    storageVersion,
+    messageType: WorkerMessageType.GetLastSync,
+    data: {},
+    expectedMessageType: WorkerMessageType.GetLastSyncResult,
+  });
+
+  if (!data.ok) {
+    throw new Error(`Could not get last sync: ${data.error}`);
+  }
+
+  return data.lastSync;
+}
+
+async function syncDone({
+  storageId,
+  storageVersion,
+  apex,
+}: { storageId: string; storageVersion: number; apex: any }) {
+  const { data } = await sendMsgToWorker({
+    storageId,
+    storageVersion,
+    messageType: WorkerMessageType.SyncDone,
+    data: {},
+    expectedMessageType: WorkerMessageType.SyncDoneResult,
+  });
+
+  if (!data.ok) {
+    apex.debug.error(`Could not update last sync date: ${data.error}`);
+  }
+}
+
+export async function syncRows({
   ajaxId,
   storageId,
   storageVersion,
@@ -22,6 +59,11 @@ export default async function syncRows({
   apex: any;
   pageSize: number;
 }) {
+  if (!window.navigator.onLine) {
+    apex.debug.log('Skipping sync rows. Not online.');
+    return;
+  }
+
   let hasMoreRows = true;
   let nextRow = 1;
 
@@ -44,6 +86,7 @@ export default async function syncRows({
 
     hasMoreRows = res.hasMoreRows;
     nextRow += pageSize;
+    apex.debug.trace(`hasMoreRows: ${hasMoreRows} nextRow: ${nextRow}`);
 
     const payload: CheckSyncRowsMsgData = {
       storageId,
@@ -78,7 +121,7 @@ export default async function syncRows({
           apex,
           ajaxId,
           method: 'get_server_changed_rows',
-          x02: chunk.join(','),
+          json: { ids: chunk.join(':') },
         })) as {
           data: any[];
         };
@@ -112,4 +155,6 @@ export default async function syncRows({
       }
     }
   }
+
+  syncDone({ storageId, storageVersion, apex });
 }
