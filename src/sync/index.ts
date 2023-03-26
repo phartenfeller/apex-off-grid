@@ -52,14 +52,16 @@ export async function syncRows({
   storageVersion,
   apex,
   pageSize,
+  online,
 }: {
   ajaxId: string;
   storageId: string;
   storageVersion: number;
   apex: any;
   pageSize: number;
+  online: boolean;
 }) {
-  if (!window.navigator.onLine) {
+  if (!online) {
     apex.debug.log('Skipping sync rows. Not online.');
     return;
   }

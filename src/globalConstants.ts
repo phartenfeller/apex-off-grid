@@ -52,9 +52,9 @@ export type InitDbPayloadData = {
 };
 
 export type InitSourceMsgData = BaseRequestData & {
-  colData: Colinfo[];
-  pkColname: string;
-  lastChangedColname: string;
+  colData?: Colinfo[];
+  pkColname?: string;
+  lastChangedColname?: string;
 };
 
 export type InitSourceResponse = {

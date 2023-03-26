@@ -1,5 +1,6 @@
 // @ts-ignore
 import { ajax } from './apex/ajax';
+import cachePage from './apex/pageCache';
 import {
   DbStatus,
   InitDbMsgData,
@@ -174,6 +175,7 @@ async function initStorage({
   lastChangedColname,
   pageSize = 500,
   syncTimeoutMins = 60,
+  online = navigator.onLine,
 }: {
   ajaxId: string;
   storageId: string;
@@ -182,6 +184,7 @@ async function initStorage({
   lastChangedColname: string;
   pageSize?: number;
   syncTimeoutMins?: number;
+  online?: boolean;
 }) {
   if (
     window.hartenfeller_dev.plugins.sync_offline_data.dbStauts !==
@@ -197,6 +200,7 @@ async function initStorage({
             storageVersion,
             pkColname,
             lastChangedColname,
+            online,
           }),
         1000,
       );
@@ -217,22 +221,26 @@ async function initStorage({
     lastChangedColname,
   });
 
-  const res = (await ajax({ apex, ajaxId, method: 'source_structure' })) as any;
+  const payload: InitSourceMsgData = { storageId, storageVersion };
 
-  if (!res?.source_structure) {
-    apex.debug.error('No source_structure in response', res);
-    return;
+  if (online) {
+    const res = (await ajax({
+      apex,
+      ajaxId,
+      method: 'source_structure',
+    })) as any;
+
+    if (!res?.source_structure) {
+      apex.debug.error('No source_structure in response', res);
+      return;
+    }
+
+    const colData: Colinfo[] = res.source_structure;
+
+    payload.colData = colData;
+    payload.pkColname = pkColname;
+    payload.lastChangedColname = lastChangedColname;
   }
-
-  const colData: Colinfo[] = res.source_structure;
-
-  const payload: InitSourceMsgData = {
-    storageId,
-    storageVersion,
-    colData,
-    pkColname,
-    lastChangedColname,
-  };
 
   const { data } = await sendMsgToWorker({
     storageId,
@@ -257,7 +265,7 @@ async function initStorage({
   } else {
     const lastSync = await getLastSync({ storageId, storageVersion });
     if (!lastSync || lastSync < Date.now() - syncTimeoutMins * 60 * 1000) {
-      syncRows({ ajaxId, storageId, storageVersion, apex, pageSize });
+      syncRows({ ajaxId, storageId, storageVersion, apex, pageSize, online });
     } else {
       apex.debug.info(
         `Skip sync for ${storageId} v${storageVersion} as it was synced in the last ${syncTimeoutMins} minutes: ${lastSync} (${new Date(
@@ -328,3 +336,9 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
   window.hartenfeller_dev.plugins.sync_offline_data.storageIsReady =
     _storageIsReady;
 }
+
+(() => {
+  setTimeout(() => {
+    cachePage(window.apex);
+  }, 1000 * 5);
+})();
