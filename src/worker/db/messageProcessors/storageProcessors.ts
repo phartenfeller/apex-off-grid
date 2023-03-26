@@ -12,8 +12,7 @@ import { log } from '../../util/logger';
 import { db } from '../initDb';
 import { getStorageColumns } from '../metaTable';
 import { ColStructure, DbRow } from '../types';
-
-const CHANGE_TYPE = '__change_type';
+import { CHANGE_TS_COL, CHANGE_TYPE_COL } from '../userTables';
 
 function prepareSearchTerm(searchTerm: string, colnames: string[]) {
   const coalescedCols = colnames.map((c) => `coalesce(${c}, '')`).join(' || ');
@@ -223,25 +222,25 @@ export function writeChanges({
 
     for (let row of rows) {
       row = fixDataTypes({ row, colStructure });
-      if (!row[CHANGE_TYPE]) {
+      if (!row[CHANGE_TYPE_COL]) {
         ok = false;
         log.error(
-          `Row has no "${CHANGE_TYPE}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
+          `Row has no "${CHANGE_TYPE_COL}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
           row,
         );
 
         continue;
-      } else if (!['I', 'U', 'D'].includes(row[CHANGE_TYPE] as string)) {
+      } else if (!['I', 'U', 'D'].includes(row[CHANGE_TYPE_COL] as string)) {
         ok = false;
         log.error(
-          `Row has invalid "${CHANGE_TYPE}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
+          `Row has invalid "${CHANGE_TYPE_COL}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
           row,
         );
 
         continue;
       }
 
-      switch (row[CHANGE_TYPE]) {
+      switch (row[CHANGE_TYPE_COL]) {
         case 'U':
           const dbRow = getRowByPk(
             storageId,
@@ -264,16 +263,20 @@ export function writeChanges({
           const sql = `
             update ${storageId}_v${storageVersion}
             set ${userCols.map((c) => `${c} = $${c}`).join(',\n')}
-              , ${colStructure.lastChangedCol} = $${colStructure.lastChangedCol}
+              , ${CHANGE_TS_COL} = $${CHANGE_TS_COL}
+              , ${CHANGE_TYPE_COL} = $${CHANGE_TYPE_COL}
             where ${colStructure.pkCol} = $${colStructure.pkCol}
           `;
 
           const binds: DbRow = {};
           for (const { colname } of colStructure.cols) {
-            binds[`$${colname}`] = row[colname];
+            if (colname !== colStructure.lastChangedCol) {
+              binds[`$${colname}`] = row[colname];
+            }
           }
 
-          binds[`$${colStructure.lastChangedCol}`] = new Date().getTime();
+          binds[`$${CHANGE_TS_COL}`] = new Date().getTime();
+          binds[`$${CHANGE_TYPE_COL}`] = 'U';
 
           if (!loggedUpadteQuery) {
             log.trace('writeChanges update sql:', sql, binds);

@@ -10,6 +10,9 @@ export async function initTables() {
   await initMetaTable();
 }
 
+export const CHANGE_TYPE_COL = '__change_type';
+export const CHANGE_TS_COL = '__change_ts';
+
 function getDatatype(type: Datatype, length?: number) {
   // text has no precision
   if (type === 'text') {
@@ -39,7 +42,10 @@ function generateTableSource(
     );
   }
 
-  atomics.push(`__change_type text check (__change_type in ('I', 'U', 'D'))`);
+  atomics.push(
+    `${CHANGE_TYPE_COL} text check (__change_type in ('I', 'U', 'D'))`,
+  );
+  atomics.push(`${CHANGE_TS_COL} integer`);
   atomics.push(`PRIMARY KEY (${pkCol})`);
 
   statement += `   ${atomics.join(', ')}    ) strict;`;
