@@ -2,12 +2,11 @@ import {
   GetLastSyncMsgData,
   GetLastSyncResponse,
   InitSourceMsgData,
-  SyncDoneMsgData,
   SyncDoneResponse,
 } from '../../globalConstants';
 import { log } from '../util/logger';
 import { db } from './initDb';
-import { Colinfo, ColStructure } from './types';
+import { ColStructure, Colinfo } from './types';
 import checkTableExists from './util/checkTableExsists';
 
 const META_TABLE_VERSION = 1;
@@ -166,7 +165,10 @@ export function getLastSync({
 export function updateLastSync({
   storageId,
   storageVersion,
-}: SyncDoneMsgData): SyncDoneResponse {
+}: {
+  storageId: string;
+  storageVersion: number;
+}): SyncDoneResponse {
   const sql = `update ${META_TABLE} set last_sync = $lastSync where storage_id = $storageId and storage_version = $storageVersion;`;
   const binds = {
     $storageId: storageId,

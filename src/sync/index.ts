@@ -2,6 +2,7 @@ import { ajax } from '../apex/ajax';
 import {
   CheckSyncRowsMsgData,
   CheckSyncRowsResponse,
+  CYAN_CONSOLE,
   GetLocalChangesResponse,
   SyncServerRowsMsgData,
   SyncServerRowsResponse,
@@ -9,6 +10,7 @@ import {
   YELLOW_CONSOLE,
 } from '../globalConstants';
 import { sendMsgToWorker } from '../messageBus';
+import randomId from '../util/randomId';
 
 export async function getLastSync({
   storageId,
@@ -33,17 +35,23 @@ async function syncDone({
   storageId,
   storageVersion,
   apex,
-}: { storageId: string; storageVersion: number; apex: any }) {
+  syncId,
+}: { storageId: string; storageVersion: number; apex: any; syncId: string }) {
   const { data } = await sendMsgToWorker({
     storageId,
     storageVersion,
     messageType: WorkerMessageType.SyncDone,
-    data: {},
+    data: { syncId },
     expectedMessageType: WorkerMessageType.SyncDoneResult,
   });
 
   if (!data.ok) {
     apex.debug.error(`Could not update last sync date: ${data.error}`);
+  } else {
+    apex.debug.info(
+      `%c Sync done for ${storageId} v${storageVersion}`,
+      CYAN_CONSOLE,
+    );
   }
 }
 
@@ -152,6 +160,8 @@ export async function syncRows({
     return;
   }
 
+  const syncId = randomId();
+
   let hasMoreRows = true;
   let nextRow = 1;
 
@@ -180,6 +190,7 @@ export async function syncRows({
       storageId,
       storageVersion,
       rows: res.data,
+      syncId,
     };
 
     const { data } = await sendMsgToWorker({
@@ -244,5 +255,5 @@ export async function syncRows({
     }
   }
 
-  syncDone({ storageId, storageVersion, apex });
+  syncDone({ storageId, storageVersion, apex, syncId });
 }

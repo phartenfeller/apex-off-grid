@@ -11,6 +11,7 @@ import {
   InitDbPayloadData,
   InitSourceMsgData,
   InsertRowsMsgData,
+  SyncDoneMsgData,
   SyncServerRowsMsgData,
   WorkerMessageParams,
   WorkerMessageType,
@@ -26,6 +27,7 @@ import {
   getRowByPk,
   getRowCount,
   getRows,
+  syncDone,
   writeChanges,
 } from './db/messageProcessors/storageProcessors';
 import { getLastSync, updateLastSync } from './db/metaTable';
@@ -55,7 +57,7 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           const res = await initDb();
 
           if (res.ok) {
-            await initTables();
+            initTables();
           }
 
           result = {
@@ -95,10 +97,9 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           break;
         }
         case WorkerMessageType.CheckSyncRows: {
-          const { storageId, storageVersion, rows } =
-            data.data as CheckSyncRowsMsgData;
+          const props = data.data as CheckSyncRowsMsgData;
 
-          const res = validateSyncRows({ storageId, storageVersion, rows });
+          const res = validateSyncRows(props);
 
           result = {
             messageId: data.messageId,
@@ -206,8 +207,8 @@ function sendMsgToMain(obj: WorkerMessageParams) {
         }
 
         case WorkerMessageType.SyncDone: {
-          const props = data.data as GetLastSyncMsgData;
-          const res = updateLastSync(props);
+          const props = data.data as SyncDoneMsgData;
+          const res = syncDone(props);
 
           result = {
             messageId: data.messageId,

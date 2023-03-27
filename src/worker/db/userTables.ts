@@ -2,12 +2,14 @@ import { InitSourceMsgData, InitSourceResponse } from '../../globalConstants';
 import { log } from '../util/logger';
 import { db } from './initDb';
 import { addMetaEntry, checkMetaEntryExists, initMetaTable } from './metaTable';
+import { initServerIdsTable } from './serverIdsTable';
 import { Colinfo, Datatype } from './types';
 import checkTableEmpty from './util/checkTableEmptry';
 import checkTableExists from './util/checkTableExsists';
 
-export async function initTables() {
-  await initMetaTable();
+export function initTables() {
+  initMetaTable();
+  initServerIdsTable();
 }
 
 export const CHANGE_TYPE_COL = '__change_type';

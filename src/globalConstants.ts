@@ -1,6 +1,7 @@
 import { Colinfo, ColStructure, DbRow, OrderByDir } from './worker/db/types';
 
 export const YELLOW_CONSOLE = 'color: yellow';
+export const CYAN_CONSOLE = 'color: cyan';
 
 export enum WorkerMessageType {
   Loaded = 'loaded',
@@ -74,7 +75,9 @@ export type InsertRowsResponse = {
   error?: string;
 };
 
-export type CheckSyncRowsMsgData = InsertRowsMsgData;
+export type CheckSyncRowsMsgData = InsertRowsMsgData & {
+  syncId: string;
+};
 
 export type CheckSyncRowsResponse = {
   ok: boolean;
@@ -150,7 +153,9 @@ export type GetLastSyncResponse = {
   lastSync?: number;
 };
 
-export type SyncDoneMsgData = BaseRequestData;
+export type SyncDoneMsgData = BaseRequestData & {
+  syncId: string;
+};
 
 export type SyncDoneResponse = {
   ok: boolean;

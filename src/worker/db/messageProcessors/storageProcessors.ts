@@ -7,12 +7,15 @@ import {
   GetRowCountResponse,
   GetRowsMsgData,
   GetRowsResponse,
+  SyncDoneMsgData,
+  SyncDoneResponse,
   WriteChangesMsgData,
   WriteChangesResponse,
 } from '../../../globalConstants';
 import { log } from '../../util/logger';
 import { db } from '../initDb';
-import { getStorageColumns } from '../metaTable';
+import { getPkColType, getStorageColumns, updateLastSync } from '../metaTable';
+import { removeServerDeletedRows } from '../serverIdsTable';
 import { ColStructure, DbRow } from '../types';
 import { CHANGE_TS_COL, CHANGE_TYPE_COL } from '../userTables';
 
@@ -410,4 +413,28 @@ export function getLocalChanges({
       error: msg,
     };
   }
+}
+
+export function syncDone({
+  storageId,
+  storageVersion,
+  syncId,
+}: SyncDoneMsgData): SyncDoneResponse {
+  const structure = getStorageColumns(storageId, storageVersion);
+  const pkColType = getPkColType(structure);
+
+  let res = removeServerDeletedRows({
+    syncId,
+    tableName: `${storageId}_v${storageVersion}`,
+    pkColname: structure.pkCol,
+    pkIsNum: pkColType === 'real',
+  });
+
+  if (!res.ok) {
+    return res;
+  }
+
+  res = updateLastSync({ storageId, storageVersion });
+
+  return res;
 }

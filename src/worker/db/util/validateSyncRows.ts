@@ -1,27 +1,31 @@
-import { CheckSyncRowsResponse } from '../../../globalConstants';
+import {
+  CheckSyncRowsMsgData,
+  CheckSyncRowsResponse,
+} from '../../../globalConstants';
 import { log } from '../../util/logger';
 import { db } from '../initDb';
 import { getPkColType, getStorageColumns } from '../metaTable';
+import { addServerIds } from '../serverIdsTable';
 
 export default function validateSyncRows({
   storageId,
   storageVersion,
   rows,
-}: {
-  storageId: string;
-  storageVersion: number;
-  rows: any[];
-}): CheckSyncRowsResponse {
+  syncId,
+}: CheckSyncRowsMsgData): CheckSyncRowsResponse {
   try {
     const structure = getStorageColumns(storageId, storageVersion);
-
     const pkColType = getPkColType(structure);
 
     let pkList: string;
     if (pkColType === 'real') {
-      pkList = rows.map((row) => row[structure.pkCol]).join(', ');
+      const pkArr: number[] = rows.map((row) => row[structure.pkCol]);
+      addServerIds({ syncId, numIds: pkArr });
+      pkList = pkArr.join(', ');
     } else {
-      pkList = rows.map((row) => `'${row[structure.pkCol]}'`).join(', ');
+      const pkArr: string[] = rows.map((row) => row[structure.pkCol]);
+      addServerIds({ syncId, strIds: pkArr });
+      pkList = pkArr.map((v) => `'${v}'`).join(', ');
     }
 
     const sql = `select ${structure.pkCol} as pk, ${structure.lastChangedCol} as lc from ${storageId}_v${storageVersion} where ${structure.pkCol} in (${pkList})  ;`;

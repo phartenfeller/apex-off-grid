@@ -1,4 +1,5 @@
 import { WorkerMessageParams, WorkerMessageType } from './globalConstants';
+import randomId from './util/randomId';
 
 export type WorkerMsgCb = (data: WorkerMessageParams) => any;
 const cbMap = new Map<string, WorkerMsgCb>();
@@ -43,17 +44,6 @@ function addCallback({
   cb: WorkerMsgCb;
 }) {
   cbMap.set(messageId, cb);
-}
-
-const characters =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-function randomId() {
-  let result = '';
-  for (let i = 0; i < 10; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
 }
 
 export function sendMsgToWorker({
