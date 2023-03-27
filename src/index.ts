@@ -258,7 +258,7 @@ async function initStorage({
     return;
   }
 
-  initStorageMethods(storageId, storageVersion, apex);
+  initStorageMethods({ storageId, storageVersion, apex, pageSize, ajaxId });
 
   if (isEmpty === true) {
     fetchAllRows({ ajaxId, storageId, storageVersion, pageSize });

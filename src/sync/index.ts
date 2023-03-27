@@ -2,6 +2,7 @@ import { ajax } from '../apex/ajax';
 import {
   CheckSyncRowsMsgData,
   CheckSyncRowsResponse,
+  GetLocalChangesResponse,
   SyncServerRowsMsgData,
   SyncServerRowsResponse,
   WorkerMessageType,
@@ -46,6 +47,78 @@ async function syncDone({
   }
 }
 
+async function sendLocalChanges({
+  ajaxId,
+  storageId,
+  storageVersion,
+  apex,
+  pageSize,
+}: {
+  ajaxId: string;
+  storageId: string;
+  storageVersion: number;
+  apex: any;
+  pageSize: number;
+}): Promise<boolean> {
+  try {
+    const { data } = await sendMsgToWorker({
+      storageId,
+      storageVersion,
+      messageType: WorkerMessageType.GetLocalChanges,
+      data: {},
+      expectedMessageType: WorkerMessageType.GetLocalChangesResult,
+    });
+
+    const { ok, error, rows } = data as GetLocalChangesResponse;
+    if (!ok) {
+      apex.debug.error(`Could not get local changes: ${error}`);
+      return false;
+    }
+
+    apex.debug.info(`%c GetLocalChanges result:`, YELLOW_CONSOLE, rows);
+
+    if (rows.length === 0) {
+      apex.debug.trace(`No local changes to send.`);
+      return true;
+    }
+
+    // get chunks of rows equal to page size
+    const chunks = [];
+    for (let i = 0; i < rows.length; i += pageSize) {
+      chunks.push(rows.slice(i, i + pageSize));
+    }
+
+    for (const chunk of chunks) {
+      const res = (await ajax({
+        apex,
+        ajaxId,
+        method: 'sync_client_changed_rows',
+        json: { rows: chunk, storageId, storageVersion },
+      })) as {
+        ok: boolean;
+        error?: string;
+      };
+
+      apex.debug.trace(
+        `fetch sync_client_changed_rows Rows ${storageId} v${storageVersion}`,
+        res,
+      );
+
+      if (!res.ok) {
+        apex.debug.error(
+          `Error processing local changes in the DB: ${res.error}`,
+        );
+        return false;
+      }
+    }
+
+    return true;
+  } catch (e) {
+    apex.debug.error(`Error sending local changes: ${e.message}`);
+    return false;
+  }
+}
+
 export async function syncRows({
   ajaxId,
   storageId,
@@ -63,6 +136,19 @@ export async function syncRows({
 }) {
   if (!online) {
     apex.debug.log('Skipping sync rows. Not online.');
+    return;
+  }
+
+  const ok = await sendLocalChanges({
+    ajaxId,
+    storageId,
+    storageVersion,
+    apex,
+    pageSize,
+  });
+
+  if (!ok) {
+    apex.debug.error(`Stopping sync rows. Could not send local changes.`);
     return;
   }
 

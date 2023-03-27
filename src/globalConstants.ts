@@ -28,6 +28,8 @@ export enum WorkerMessageType {
   GetLastSyncResult = 'get_last_sync_result',
   SyncDone = 'sync_done',
   SyncDoneResult = 'sync_done_result',
+  GetLocalChanges = 'get_local_changes',
+  GetLocalChangesResult = 'get_local_changes_result',
 }
 
 export type WorkerMessageParams = {
@@ -153,6 +155,14 @@ export type SyncDoneMsgData = BaseRequestData;
 export type SyncDoneResponse = {
   ok: boolean;
   error?: string;
+};
+
+export type GetLocalChangesMsgData = BaseRequestData;
+
+export type GetLocalChangesResponse = {
+  ok: boolean;
+  error?: string;
+  rows?: DbRow[];
 };
 
 export enum DbStatus {

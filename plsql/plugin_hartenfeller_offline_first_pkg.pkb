@@ -64,8 +64,13 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
         return 'text';
       when apex_exec.c_data_type_number then
         return 'real';
+
+      when apex_exec.c_data_type_date then
+        -- todo better date handling
+        return 'text';
+      
       else
-        apex_debug.error( apex_string.format('Unknown datatype => %0', pi_datatype ) );
+        apex_debug.error( apex_string.format('Unhandeled datatype => %0', pi_datatype ) );
         return 'text';
     end case;
   end get_sqlite_data_type;
@@ -200,27 +205,53 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
   as
     l_clob              clob;
     l_json              json_object_t;
-    l_rows              json_array_t;
+    l_regions_arr       json_array_t;
+    l_region_data_obj   json_object_t;
+    l_rows_arr          json_array_t;
+
     l_sync_template_row offline_data_sync%rowtype;
     l_sync_row          offline_data_sync%rowtype;
   begin
     l_clob := get_json_clob();
     l_json := json_object_t(l_clob);
 
-    l_sync_template_row.sync_storage_id      := l_json.get_string('storage_id');
-    l_sync_template_row.sync_storage_version := l_json.get_string('storage_version');
+    l_regions_arr := l_json.get_array('regions');
+    l_region_data_obj := treat(l_regions_arr.get(0) as json_object_t).get_object('data');
+    l_rows_arr := l_region_data_obj.get_array('rows');
+
+    l_sync_template_row.sync_storage_id      := l_region_data_obj.get_string( 'storageId' );
+    l_sync_template_row.sync_storage_version := l_region_data_obj.get_number( 'storageVersion' );
+    l_sync_template_row.sync_created_at      := sysdate;
     l_sync_template_row.sync_created_by      := v('APP_USER');
     l_sync_template_row.sync_created_session := v('APP_SESSION');
 
-    l_rows := l_json.get_array('rows');
+    apex_debug.trace( 
+      apex_string.format(
+        'storage: %s v %s, created: %s session: %s',
+        l_sync_template_row.sync_storage_id,
+        l_sync_template_row.sync_storage_version,
+        l_sync_template_row.sync_created_by,
+        l_sync_template_row.sync_created_session
+      )
+    );
+    apex_debug.trace('process_client_changed_rows: ' || l_rows_arr.get_size);
 
-    for i in 0 .. l_rows.get_size - 1 loop
+    for i in 0 .. l_rows_arr.get_size - 1 loop
       l_sync_row := l_sync_template_row;
-      l_sync_row.sync_data_json := TREAT(l_rows.get(i) AS JSON_OBJECT_T).to_clob();
+      l_sync_row.sync_data_json := TREAT(l_rows_arr.get(i) AS JSON_OBJECT_T).to_clob();
 
       insert into offline_data_sync values l_sync_row;
+
+      offline_data_sync_api.sync_row(l_sync_row);
     end loop;
 
+    apex_json.write('ok', true);
+  exception
+    when others then
+      apex_debug.error('process_client_changed_rows: ' || sqlerrm || ' | ' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE );
+
+      apex_json.write('ok', false);
+      apex_json.write('error', sqlerrm);
   end process_client_changed_rows;
 
 

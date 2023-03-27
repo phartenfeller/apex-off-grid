@@ -6,6 +6,7 @@ import {
   WorkerMessageType,
 } from './globalConstants';
 import { sendMsgToWorker } from './messageBus';
+import { syncRows } from './sync';
 import { DbRow, OrderByDir } from './worker/db/types';
 
 async function _getColInfo(
@@ -160,14 +161,50 @@ async function _writeChanges({
   return { ok, error };
 }
 
-export default function initStorageMethods(
-  storageId: string,
-  storageVersion: number,
-  apex: any,
-) {
+function _sync({
+  storageId,
+  storageVersion,
+  pageSize,
+  apex,
+  ajaxId,
+}: {
+  storageId: string;
+  storageVersion: number;
+  pageSize?: number;
+  apex: any;
+  ajaxId: string;
+}) {
+  syncRows({
+    ajaxId,
+    storageId,
+    storageVersion,
+    apex,
+    pageSize,
+    online: navigator.onLine,
+  });
+}
+
+export type StorageMethodConfig = {
+  pageSize?: number;
+};
+
+export default function initStorageMethods({
+  storageId,
+  storageVersion,
+  apex,
+  pageSize,
+  ajaxId,
+}: {
+  storageId: string;
+  storageVersion: number;
+  apex: any;
+  pageSize?: number;
+  ajaxId: string;
+}) {
   const storageName = `${storageId}_v${storageVersion}`;
 
   window.hartenfeller_dev.plugins.sync_offline_data.storages[storageName] = {
+    config: { pageSize } as StorageMethodConfig,
     getColInfo: () => _getColInfo(storageId, storageVersion, apex),
     getRowByPk: (pk: string | number) =>
       _getRowByPk(storageId, storageVersion, pk, apex),
@@ -198,5 +235,6 @@ export default function initStorageMethods(
       _getRowCount({ storageId, storageVersion, apex, searchTerm }),
     writeChanges: (rows: DbRow[]) =>
       _writeChanges({ storageId, storageVersion, rows, apex }),
+    sync: () => _sync({ storageId, storageVersion, apex, pageSize, ajaxId }),
   };
 }

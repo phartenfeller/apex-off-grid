@@ -4,6 +4,7 @@ import {
   CheckSyncRowsMsgData,
   GetColInfoMsgData,
   GetLastSyncMsgData,
+  GetLocalChangesMsgData,
   GetRowByPkMsgData,
   GetRowCountMsgData,
   GetRowsMsgData,
@@ -21,6 +22,7 @@ import validateSyncRows from './db/util/validateSyncRows';
 import syncServerRows from './db/util/syncServerRows';
 import {
   getColInfo,
+  getLocalChanges,
   getRowByPk,
   getRowCount,
   getRows,
@@ -210,6 +212,20 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           result = {
             messageId: data.messageId,
             messageType: WorkerMessageType.SyncDoneResult,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+
+        case WorkerMessageType.GetLocalChanges: {
+          const props = data.data as GetLocalChangesMsgData;
+          const res = getLocalChanges(props);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.GetLocalChangesResult,
             data: res,
           };
           sendMsgToMain(result);
