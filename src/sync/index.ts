@@ -127,6 +127,37 @@ async function sendLocalChanges({
   }
 }
 
+async function deleteLocalChanges({
+  storageId,
+  storageVersion,
+  apex,
+}: {
+  storageId: string;
+  storageVersion: number;
+  apex: any;
+}): Promise<boolean> {
+  try {
+    const { data } = await sendMsgToWorker({
+      storageId,
+      storageVersion,
+      messageType: WorkerMessageType.DeleteLocalChanges,
+      data: {},
+      expectedMessageType: WorkerMessageType.DeleteLocalChangesResult,
+    });
+
+    const { ok, error } = data as { ok: boolean; error?: string };
+    if (!ok) {
+      apex.debug.error(`Could not delete local changes: ${error}`);
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    apex.debug.error(`Error deleting local changes: ${e.message}`);
+    return false;
+  }
+}
+
 export async function syncRows({
   ajaxId,
   storageId,
@@ -147,7 +178,7 @@ export async function syncRows({
     return;
   }
 
-  const ok = await sendLocalChanges({
+  let ok = await sendLocalChanges({
     ajaxId,
     storageId,
     storageVersion,
@@ -157,6 +188,17 @@ export async function syncRows({
 
   if (!ok) {
     apex.debug.error(`Stopping sync rows. Could not send local changes.`);
+    return;
+  }
+
+  ok = await deleteLocalChanges({
+    storageId,
+    storageVersion,
+    apex,
+  });
+
+  if (!ok) {
+    apex.debug.error(`Stopping sync rows. Could not delete local changes.`);
     return;
   }
 

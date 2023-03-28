@@ -1,4 +1,6 @@
 import {
+  DeleteLocalChangesMsgData,
+  DeleteLocalChangesResponse,
   GetColInfoResponse,
   GetLocalChangesMsgData,
   GetLocalChangesResponse,
@@ -437,4 +439,26 @@ export function syncDone({
   res = updateLastSync({ storageId, storageVersion });
 
   return res;
+}
+
+export function deleteLocalChanges({
+  storageId,
+  storageVersion,
+}: DeleteLocalChangesMsgData): DeleteLocalChangesResponse {
+  const sql = `delete from ${storageId}_v${storageVersion} where ${CHANGE_TYPE_COL} is not null;`;
+
+  try {
+    db.exec(sql);
+
+    return {
+      ok: true,
+    };
+  } catch (err) {
+    const msg = `Error deleting local change rows for ${storageId}_v${storageVersion}: ${err}`;
+    log.error(msg);
+    return {
+      ok: false,
+      error: msg,
+    };
+  }
 }

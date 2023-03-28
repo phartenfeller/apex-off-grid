@@ -2,6 +2,7 @@ import { initDb } from './db/initDb';
 import { initSource, initTables } from './db/userTables';
 import {
   CheckSyncRowsMsgData,
+  DeleteLocalChangesMsgData,
   GetColInfoMsgData,
   GetLastSyncMsgData,
   GetLocalChangesMsgData,
@@ -22,6 +23,7 @@ import insertRows from './db/util/insertRows';
 import validateSyncRows from './db/util/validateSyncRows';
 import syncServerRows from './db/util/syncServerRows';
 import {
+  deleteLocalChanges,
   getColInfo,
   getLocalChanges,
   getRowByPk,
@@ -30,7 +32,7 @@ import {
   syncDone,
   writeChanges,
 } from './db/messageProcessors/storageProcessors';
-import { getLastSync, updateLastSync } from './db/metaTable';
+import { getLastSync } from './db/metaTable';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
   postMessage(obj);
@@ -227,6 +229,20 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           result = {
             messageId: data.messageId,
             messageType: WorkerMessageType.GetLocalChangesResult,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+
+        case WorkerMessageType.DeleteLocalChanges: {
+          const props = data.data as DeleteLocalChangesMsgData;
+          const res = deleteLocalChanges(props);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.DeleteLocalChangesResult,
             data: res,
           };
           sendMsgToMain(result);

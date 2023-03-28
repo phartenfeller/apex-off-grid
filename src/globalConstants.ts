@@ -31,6 +31,8 @@ export enum WorkerMessageType {
   SyncDoneResult = 'sync_done_result',
   GetLocalChanges = 'get_local_changes',
   GetLocalChangesResult = 'get_local_changes_result',
+  DeleteLocalChanges = 'delete_local_changes',
+  DeleteLocalChangesResult = 'delete_local_changes_result',
 }
 
 export type WorkerMessageParams = {
@@ -168,6 +170,13 @@ export type GetLocalChangesResponse = {
   ok: boolean;
   error?: string;
   rows?: DbRow[];
+};
+
+export type DeleteLocalChangesMsgData = BaseRequestData;
+
+export type DeleteLocalChangesResponse = {
+  ok: boolean;
+  error?: string;
 };
 
 export enum DbStatus {
