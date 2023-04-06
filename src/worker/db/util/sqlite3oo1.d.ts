@@ -1,6 +1,6 @@
 // Reference: https://sqlite.org/wasm/doc/trunk/api-oo1.md
 
-declare namespace sqlite3oo1 {
+declare module 'sqlite3oo1' {
   export type bind = any[] | { [key: string]: any };
 
   export type execOptions = {
@@ -43,6 +43,7 @@ declare namespace sqlite3oo1 {
     exec(optionsObject: execOptions): DB | any[];
 
     selectObject(sql: string, bind?: bind): { [key: string]: any };
+    // rome-ignore lint/nursery/noRedeclare: <explanation>
     selectObjects(sql: string, bind?: bind): { [key: string]: any }[];
 
     transaction(callback: () => void): void;

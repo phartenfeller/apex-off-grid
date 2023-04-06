@@ -70,28 +70,30 @@ export function addServerIds({
     $id
   );`;
 
-  const stmnt = db.prepare(sql);
-  const vals = numIds || strIds;
+  db.transaction(() => {
+    const stmnt = db.prepare(sql);
+    const vals = numIds || strIds;
 
-  try {
-    for (const id of vals) {
-      try {
-        stmnt.bind({ $syncId: syncId, $id: id });
-      } catch (err) {
-        log.error(`Error binding row:`, err, 'Bind:', {
-          $syncId: syncId,
-          $id: id,
-        });
-        throw err;
+    try {
+      for (const id of vals) {
+        try {
+          stmnt.bind({ $syncId: syncId, $id: id });
+        } catch (err) {
+          log.error(`Error binding row:`, err, 'Bind:', {
+            $syncId: syncId,
+            $id: id,
+          });
+          throw err;
+        }
+        stmnt.stepReset();
       }
-      stmnt.stepReset();
+    } catch (err) {
+      log.error(`Error adding server ids:`, err);
+      throw err;
+    } finally {
+      stmnt.finalize();
     }
-  } catch (err) {
-    log.error(`Error adding server ids:`, err);
-    throw err;
-  } finally {
-    stmnt.finalize();
-  }
+  });
 }
 
 function removeServerIds(syncId: string) {

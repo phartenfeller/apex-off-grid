@@ -1,9 +1,10 @@
+import { DB } from 'sqlite3oo1';
 import { InitDbMsgData } from '../../globalConstants';
 import { log } from '../util/logger';
 
 const DB_NAME = 'file:///hartenfeller_dev_apex_offline_data.sqlite';
 
-export let db: sqlite3oo1.DB;
+export let db: DB;
 
 declare global {
   function sqlite3InitModule(options: {
@@ -40,10 +41,10 @@ export async function initDb(): Promise<InitDbMsgData> {
               `OPFS? ==> ${opfsFound}`,
             );
             if (opfsFound) {
-              db = new oo.OpfsDb(DB_NAME) as sqlite3oo1.DB;
+              db = new oo.OpfsDb(DB_NAME) as DB;
               log.info('The OPFS is available.');
             } else {
-              db = new oo.DB(DB_NAME, 'ct') as sqlite3oo1.DB;
+              db = new oo.DB(DB_NAME, 'ct') as DB;
               log.info('The OPFS is not available.');
             }
             log.info('transient db =', (db as any).filename);

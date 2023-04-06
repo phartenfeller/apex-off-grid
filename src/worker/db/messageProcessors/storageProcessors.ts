@@ -229,32 +229,33 @@ export function writeChanges({
         (c) => ![colStructure.pkCol, colStructure.lastChangedCol].includes(c),
       );
 
-    for (let row of rows) {
-      row = fixDataTypes({ row, colStructure });
-      if (!row[CHANGE_TYPE_COL]) {
-        ok = false;
-        log.error(
-          `Row has no "${CHANGE_TYPE_COL}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
-          row,
-        );
+    db.transaction(() => {
+      for (let row of rows) {
+        row = fixDataTypes({ row, colStructure });
+        if (!row[CHANGE_TYPE_COL]) {
+          ok = false;
+          log.error(
+            `Row has no "${CHANGE_TYPE_COL}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
+            row,
+          );
 
-        continue;
-      } else if (!['I', 'U', 'D'].includes(row[CHANGE_TYPE_COL] as string)) {
-        ok = false;
-        log.error(
-          `Row has invalid "${CHANGE_TYPE_COL}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
-          row,
-        );
+          continue;
+        } else if (!['I', 'U', 'D'].includes(row[CHANGE_TYPE_COL] as string)) {
+          ok = false;
+          log.error(
+            `Row has invalid "${CHANGE_TYPE_COL}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
+            row,
+          );
 
-        continue;
-      }
+          continue;
+        }
 
-      let sql = '';
-      const binds: DbRow = {};
+        let sql = '';
+        const binds: DbRow = {};
 
-      switch (row[CHANGE_TYPE_COL]) {
-        case 'I':
-          sql = `
+        switch (row[CHANGE_TYPE_COL]) {
+          case 'I':
+            sql = `
             insert into ${storageId}_v${storageVersion} (
               ${colStructure.cols.map((c) => c.colname).join(',\n')}
               , ${CHANGE_TS_COL}
@@ -266,53 +267,53 @@ export function writeChanges({
             );
           `;
 
-          for (const { colname } of colStructure.cols) {
-            binds[`$${colname}`] = row[colname];
-          }
-          binds[`$${CHANGE_TS_COL}`] = Date.now();
-          binds[`$${CHANGE_TYPE_COL}`] = row[CHANGE_TYPE_COL];
+            for (const { colname } of colStructure.cols) {
+              binds[`$${colname}`] = row[colname];
+            }
+            binds[`$${CHANGE_TS_COL}`] = Date.now();
+            binds[`$${CHANGE_TYPE_COL}`] = row[CHANGE_TYPE_COL];
 
-          if (!loggedInsertQuery) {
-            log.trace('writeChanges insert sql:', sql, binds);
-            loggedInsertQuery = true;
-          }
-          const insStmnt = db.prepare(sql);
-          try {
-            insStmnt.bind(binds);
-            insStmnt.stepReset();
-          } catch (err) {
-            ok = false;
-            log.error(
-              `Error updating row (${storageId}_v${storageVersion}):`,
-              err,
-              sql,
-              binds,
+            if (!loggedInsertQuery) {
+              log.trace('writeChanges insert sql:', sql, binds);
+              loggedInsertQuery = true;
+            }
+            const insStmnt = db.prepare(sql);
+            try {
+              insStmnt.bind(binds);
+              insStmnt.stepReset();
+            } catch (err) {
+              ok = false;
+              log.error(
+                `Error updating row (${storageId}_v${storageVersion}):`,
+                err,
+                sql,
+                binds,
+              );
+            }
+            insStmnt.finalize();
+
+            break;
+
+          case 'U':
+            const dbRow = getRowByPk(
+              storageId,
+              storageVersion,
+              row[colStructure.pkCol],
             );
-          }
-          insStmnt.finalize();
 
-          break;
+            const diffs = rowsDiffer(row, dbRow.row, userCols);
 
-        case 'U':
-          const dbRow = getRowByPk(
-            storageId,
-            storageVersion,
-            row[colStructure.pkCol],
-          );
+            if (!diffs) {
+              log.info(
+                `Row ${
+                  row[colStructure.pkCol]
+                } has no changes (${storageId}_v${storageVersion}). Skipping...`,
+                row,
+              );
+              continue;
+            }
 
-          const diffs = rowsDiffer(row, dbRow.row, userCols);
-
-          if (!diffs) {
-            log.info(
-              `Row ${
-                row[colStructure.pkCol]
-              } has no changes (${storageId}_v${storageVersion}). Skipping...`,
-              row,
-            );
-            continue;
-          }
-
-          sql = `
+            sql = `
             update ${storageId}_v${storageVersion}
             set ${userCols.map((c) => `${c} = $${c}`).join(',\n')}
               , ${CHANGE_TS_COL} = $${CHANGE_TS_COL}
@@ -320,64 +321,65 @@ export function writeChanges({
             where ${colStructure.pkCol} = $${colStructure.pkCol}
           `;
 
-          for (const { colname } of colStructure.cols) {
-            if (colname !== colStructure.lastChangedCol) {
-              binds[`$${colname}`] = row[colname];
+            for (const { colname } of colStructure.cols) {
+              if (colname !== colStructure.lastChangedCol) {
+                binds[`$${colname}`] = row[colname];
+              }
             }
-          }
-          binds[`$${CHANGE_TS_COL}`] = Date.now();
-          binds[`$${CHANGE_TYPE_COL}`] = row[CHANGE_TYPE_COL];
+            binds[`$${CHANGE_TS_COL}`] = Date.now();
+            binds[`$${CHANGE_TYPE_COL}`] = row[CHANGE_TYPE_COL];
 
-          if (!loggedUpdateQuery) {
-            log.trace('writeChanges update sql:', sql, binds);
-            loggedUpdateQuery = true;
-          }
-          const updateStmnt = db.prepare(sql);
-          try {
-            updateStmnt.bind(binds);
-            updateStmnt.stepReset();
-          } catch (err) {
-            ok = false;
-            log.error(
-              `Error updating row (${storageId}_v${storageVersion}):`,
-              err,
-              sql,
-              binds,
-            );
-          }
-          updateStmnt.finalize();
+            if (!loggedUpdateQuery) {
+              log.trace('writeChanges update sql:', sql, binds);
+              loggedUpdateQuery = true;
+            }
+            const updateStmnt = db.prepare(sql);
+            try {
+              updateStmnt.bind(binds);
+              updateStmnt.stepReset();
+            } catch (err) {
+              ok = false;
+              log.error(
+                `Error updating row (${storageId}_v${storageVersion}):`,
+                err,
+                sql,
+                binds,
+              );
+            }
+            updateStmnt.finalize();
 
-          break;
+            break;
 
-        case 'D':
-          sql = `
+          case 'D':
+            sql = `
             delete from ${storageId}_v${storageVersion}
             where ${colStructure.pkCol} = $${colStructure.pkCol}
           `;
 
-          binds[`$${colStructure.pkCol}`] = row[colStructure.pkCol];
+            binds[`$${colStructure.pkCol}`] = row[colStructure.pkCol];
 
-          if (!loggedDeleteQuery) {
-            log.trace('writeChanges delete sql:', sql, binds);
-            loggedDeleteQuery = true;
-          }
-          const delStmnt = db.prepare(sql);
-          try {
-            delStmnt.bind(binds);
-            delStmnt.stepReset();
-          } catch (err) {
+            if (!loggedDeleteQuery) {
+              log.trace('writeChanges delete sql:', sql, binds);
+              loggedDeleteQuery = true;
+            }
+            const delStmnt = db.prepare(sql);
+            try {
+              delStmnt.bind(binds);
+              delStmnt.stepReset();
+            } catch (err) {
+              delStmnt.finalize();
+              ok = false;
+              log.error(
+                `Error deleting row (${storageId}_v${storageVersion}):`,
+                err,
+                sql,
+                binds,
+              );
+            }
             delStmnt.finalize();
-            ok = false;
-            log.error(
-              `Error deleting row (${storageId}_v${storageVersion}):`,
-              err,
-              sql,
-              binds,
-            );
-          }
-          delStmnt.finalize();
+        }
       }
-    }
+    });
 
     return {
       ok,

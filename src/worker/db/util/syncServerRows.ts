@@ -54,14 +54,30 @@ export default function syncServerRows({
       const keys = Object.keys(rows[i]);
       for (let j = 0; j < keys.length; j++) {
         rows[i][`$${keys[j]}`] = rows[i][keys[j]];
-        // rome-ignore lint/performance/noDelete: <explanation>
         delete rows[i][keys[j]];
       }
     }
 
-    for (let i = 0; i < rows.length; i++) {
-      db.exec(sql, { bind: rows[i] });
-    }
+    db.transaction(() => {
+      const stmnt = db.prepare(sql);
+
+      try {
+        for (const row of rows) {
+          try {
+            stmnt.bind(row);
+          } catch (err) {
+            log.error(`Error binding row:`, err, 'Bind:', row);
+            throw err;
+          }
+          stmnt.stepReset();
+        }
+      } catch (err) {
+        log.error(`Error adding server ids:`, err);
+        throw err;
+      } finally {
+        stmnt.finalize();
+      }
+    });
 
     return { ok: true };
   } catch (e) {

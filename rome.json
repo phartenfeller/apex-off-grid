@@ -9,7 +9,8 @@
         "noUnusedVariables": "warn"
       },
       "nursery": {
-        "recommended": true
+        "recommended": true,
+        "noSwitchDeclarations": "off"
       },
       "style": {
         "recommended": true,

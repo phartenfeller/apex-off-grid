@@ -30,30 +30,27 @@ export default function insertRows({
     });
     log.trace('insertRows bind:', bind);
 
-    const stmnt = db.prepare(sql);
+    db.transaction(() => {
+      const stmnt = db.prepare(sql);
 
-    try {
-      bind.forEach((bind) => {
-        try {
-          stmnt.bind(bind);
-        } catch (err) {
-          log.error(`Error binding row:`, err, 'Bind:', bind);
-          throw err;
-        }
-        stmnt.stepReset();
-      });
-    } catch (err) {
-      log.error(
-        `Error inserting rows into ${storageId}_v${storageVersion} in bind phase:`,
-        err,
-      );
-      return {
-        ok: false,
-        error: `Error inserting rows into ${storageId}_v${storageVersion}: ${err}`,
-      };
-    } finally {
-      stmnt.finalize();
-    }
+      try {
+        bind.forEach((bind) => {
+          try {
+            stmnt.bind(bind);
+          } catch (err) {
+            log.error(`Error binding row:`, err, 'Bind:', bind);
+            throw err;
+          }
+          stmnt.stepReset();
+        });
+      } catch (err) {
+        const msg = `Error inserting rows into ${storageId}_v${storageVersion} in bind phase: ${err.message}`;
+        log.error(msg, err);
+        throw err;
+      } finally {
+        stmnt.finalize();
+      }
+    });
 
     return { ok: true };
   } catch (e) {
