@@ -18,6 +18,7 @@ function optimizeDb() {
   db.exec([
     'PRAGMA analysis_limit=400;', // make sure pragma optimize does not take too long
     'PRAGMA optimize;', // gather statistics to improve query optimization
+    'PRAGMA vacuum;', // remove unused space
   ]);
   log.trace('Finish optimizing database');
 }
