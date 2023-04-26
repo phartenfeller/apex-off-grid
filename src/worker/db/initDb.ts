@@ -56,7 +56,7 @@ export async function initDb(): Promise<InitDbMsgData> {
               'PRAGMA synchronous = normal;',
             ]);
 
-            setTimeout(optimizeDb, 1000 * 60 * 2); // optimize after 2 minutes
+            setTimeout(optimizeDb, 1000 * 60 * 10); // optimize after 10 minutes
             log.trace('DB', db);
 
             resolve({ ok: true });
