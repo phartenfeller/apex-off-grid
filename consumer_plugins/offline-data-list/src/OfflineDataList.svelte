@@ -22,6 +22,7 @@
   let activeId = "";
   let pages = new Map();
   let searchTerm = "";
+  let spinner$;
 
   function wait(ms) {
     return new Promise((resolve) => {
@@ -93,7 +94,6 @@
   async function fetchMoreRows(pageNo) {
     const offset = (pageNo - 1) * pageSize;
 
-    console.log("fetchMoreRows", { offset, pageSize, pageNo, searchTerm });
     const data =
       await window.hartenfeller_dev.plugins.sync_offline_data.storages[
         storageKey
@@ -104,7 +104,6 @@
 
   async function addPage(pageNo) {
     const data = await fetchMoreRows(pageNo);
-    console.log({ data });
 
     if (!data || data.length === 0) {
       apex.debug.error(`Could not add page as no data found`);
@@ -141,6 +140,18 @@
     }
   }
 
+  async function initPlugin() {
+    const colInfo = await getStorageInfo();
+    await resetState();
+    pkCol = colInfo.pkCol;
+    await addPage(1);
+
+    if (spinner$) {
+      spinner$.remove();
+    }
+    initialized = true;
+  }
+
   onMount(async () => {
     storageKey = `${storageId}_v${storageVersion}`;
 
@@ -152,19 +163,19 @@
       storageVersion,
     });
 
-    await wait(500);
-    const colInfo = await getStorageInfo();
-    await resetState();
-    pkCol = colInfo.pkCol;
-    await addPage(1);
-    initialized = true;
+    spinner$ = apex.util.showSpinner(apex.jQuery(`#${regionId}`));
+
+    window.hartenfeller_dev.plugins.sync_offline_data.addStorageReadyCb({
+      storageId,
+      storageVersion,
+      cb: initPlugin,
+    });
   });
 
   function handleClick(e) {
     e.preventDefault();
     const id = e.target.dataset.id;
     activeId = id;
-    console.log({ id });
 
     if (valuePageItem) {
       apex.item(valuePageItem).setValue(id);

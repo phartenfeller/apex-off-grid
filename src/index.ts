@@ -14,8 +14,9 @@ import {
   YELLOW_CONSOLE,
 } from './globalConstants';
 import { initMsgBus, sendMsgToWorker } from './messageBus';
-import initStorageMethods from './storageMethods';
+import initStorageMethods, { setStorageReady } from './storageMethods';
 import { syncRows, getLastSync } from './sync';
+import { StorageInfo } from './types';
 import { Colinfo } from './worker/db/types';
 
 declare global {
@@ -117,10 +118,8 @@ async function fetchAllRows({
   storageId,
   storageVersion,
   pageSize,
-}: {
+}: StorageInfo & {
   ajaxId: string;
-  storageId: string;
-  storageVersion: number;
   pageSize: number;
 }) {
   let hasMoreRows = true;
@@ -176,10 +175,8 @@ async function initStorage({
   pageSize = 500,
   syncTimeoutMins = 60,
   online = navigator.onLine,
-}: {
+}: StorageInfo & {
   ajaxId: string;
-  storageId: string;
-  storageVersion: number;
   pkColname: string;
   lastChangedColname: string;
   pageSize?: number;
@@ -261,11 +258,18 @@ async function initStorage({
   initStorageMethods({ storageId, storageVersion, apex, pageSize, ajaxId });
 
   if (isEmpty === true) {
-    fetchAllRows({ ajaxId, storageId, storageVersion, pageSize });
+    await fetchAllRows({ ajaxId, storageId, storageVersion, pageSize });
   } else {
     const lastSync = await getLastSync({ storageId, storageVersion });
     if (!lastSync || lastSync < Date.now() - syncTimeoutMins * 60 * 1000) {
-      syncRows({ ajaxId, storageId, storageVersion, apex, pageSize, online });
+      await syncRows({
+        ajaxId,
+        storageId,
+        storageVersion,
+        apex,
+        pageSize,
+        online,
+      });
     } else {
       apex.debug.info(
         `Skip sync for ${storageId} v${storageVersion} as it was synced in the last ${syncTimeoutMins} minutes: ${lastSync} (${new Date(
@@ -274,22 +278,15 @@ async function initStorage({
       );
     }
   }
+
+  setStorageReady({ storageId, storageVersion, apex });
 }
 
-function _getStorageKey({
-  storageId,
-  storageVersion,
-}: { storageId: string; storageVersion: number }) {
+function _getStorageKey({ storageId, storageVersion }: StorageInfo) {
   return `${storageId}_v${storageVersion}`;
 }
 
-function _storageIsReady({
-  storageId,
-  storageVersion,
-}: {
-  storageId: string;
-  storageVersion: number;
-}) {
+function _storageIsReady({ storageId, storageVersion }: StorageInfo) {
   const storageKey = _getStorageKey({ storageId, storageVersion });
 
   if (
@@ -305,6 +302,51 @@ function _storageIsReady({
   }
 
   return { ok: true };
+}
+
+const storageCallbacks: { [key: string]: (() => void)[] } = {};
+
+function _addStorageReadyCb({
+  storageId,
+  storageVersion,
+  cb,
+}: StorageInfo & {
+  cb: () => void;
+}) {
+  const storageKey = _getStorageKey({ storageId, storageVersion });
+  apex.debug.trace(`addStorageReadyCb: ${storageKey}`);
+
+  if (
+    window.hartenfeller_dev.plugins.sync_offline_data?.storages?.[storageKey]
+      ?.isReady
+  ) {
+    cb();
+  } else {
+    if (storageCallbacks[storageKey]) {
+      storageCallbacks[storageKey].push(cb);
+    }
+    storageCallbacks[storageKey] = [cb];
+  }
+}
+
+export function callStorageCallbacks({
+  storageId,
+  storageVersion,
+}: StorageInfo) {
+  const storageKey = _getStorageKey({ storageId, storageVersion });
+  apex.debug.trace(
+    `callStorageCallbacks: ${storageKey}`,
+    storageCallbacks[storageKey],
+  );
+
+  window.hartenfeller_dev.plugins.sync_offline_data.storages[
+    storageKey
+  ].ready = true;
+
+  if (storageCallbacks[storageKey]) {
+    storageCallbacks[storageKey].forEach((cb) => cb());
+    storageCallbacks[storageKey] = [];
+  }
 }
 
 if (!window.hartenfeller_dev) {
@@ -335,6 +377,9 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
 
   window.hartenfeller_dev.plugins.sync_offline_data.storageIsReady =
     _storageIsReady;
+
+  window.hartenfeller_dev.plugins.sync_offline_data.addStorageReadyCb =
+    _addStorageReadyCb;
 }
 
 (() => {

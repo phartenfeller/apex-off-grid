@@ -1,3 +1,4 @@
+import { callStorageCallbacks } from '.';
 import {
   GetColInfoResponse,
   GetRowByPkResponse,
@@ -7,6 +8,7 @@ import {
 } from './globalConstants';
 import { sendMsgToWorker } from './messageBus';
 import { syncRows } from './sync';
+import { StorageInfo } from './types';
 import { DbRow, OrderByDir } from './worker/db/types';
 
 async function _getColInfo(
@@ -70,9 +72,7 @@ async function _getRows({
   orderByCol,
   orderByDir,
   searchTerm,
-}: {
-  storageId: string;
-  storageVersion: number;
+}: StorageInfo & {
   apex: any;
   offset: number;
   maxRows: number;
@@ -103,9 +103,7 @@ async function _getRowCount({
   storageVersion,
   apex,
   searchTerm,
-}: {
-  storageId: string;
-  storageVersion: number;
+}: StorageInfo & {
   apex: any;
   searchTerm?: string;
 }) {
@@ -132,9 +130,7 @@ async function _writeChanges({
   storageVersion,
   rows,
   apex,
-}: {
-  storageId: string;
-  storageVersion: number;
+}: StorageInfo & {
   rows: DbRow[];
   apex: any;
 }) {
@@ -167,9 +163,7 @@ function _sync({
   pageSize,
   apex,
   ajaxId,
-}: {
-  storageId: string;
-  storageVersion: number;
+}: StorageInfo & {
   pageSize?: number;
   apex: any;
   ajaxId: string;
@@ -194,9 +188,7 @@ export default function initStorageMethods({
   apex,
   pageSize,
   ajaxId,
-}: {
-  storageId: string;
-  storageVersion: number;
+}: StorageInfo & {
   apex: any;
   pageSize?: number;
   ajaxId: string;
@@ -204,6 +196,7 @@ export default function initStorageMethods({
   const storageName = `${storageId}_v${storageVersion}`;
 
   window.hartenfeller_dev.plugins.sync_offline_data.storages[storageName] = {
+    isReady: false,
     config: { pageSize } as StorageMethodConfig,
     getColInfo: () => _getColInfo(storageId, storageVersion, apex),
     getRowByPk: (pk: string | number) =>
@@ -237,4 +230,23 @@ export default function initStorageMethods({
       _writeChanges({ storageId, storageVersion, rows, apex }),
     sync: () => _sync({ storageId, storageVersion, apex, pageSize, ajaxId }),
   };
+}
+
+export function setStorageReady({
+  storageId,
+  storageVersion,
+  apex,
+}: StorageInfo & { apex: any }) {
+  const storageName = `${storageId}_v${storageVersion}`;
+
+  window.hartenfeller_dev.plugins.sync_offline_data.storages[
+    storageName
+  ].isReady = true;
+
+  apex.event.trigger('body', 'single_storage_ready', {
+    storageId,
+    storageVersion,
+  });
+
+  callStorageCallbacks({ storageId, storageVersion });
 }
