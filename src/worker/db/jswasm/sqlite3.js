@@ -9086,7 +9086,7 @@ self.sqlite3ApiBootstrap.initializers.push(function(sqlite3){
 
 
 self.sqlite3ApiBootstrap.initializers.push(function(sqlite3){
-  sqlite3.version = {"libVersion": "3.41.0", "libVersionNumber": 3041000, "sourceId": "2023-02-21 18:09:37 05941c2a04037fc3ed2ffae11f5d2260706f89431f463518740f72ada350866d","downloadVersion": 3410000};
+  sqlite3.version = {"libVersion": "3.41.2", "libVersionNumber": 3041002, "sourceId": "2023-03-22 11:56:21 0d1fc92f94cb6b76bffe3ec34d69cffde2924203304e8ffc4155597af0c191da","downloadVersion": 3410200};
 });
 
 
