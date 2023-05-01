@@ -6,12 +6,14 @@ import {
   GetColInfoMsgData,
   GetLastSyncMsgData,
   GetLocalChangesMsgData,
+  GetRegionDataMsgData,
   GetRowByPkMsgData,
   GetRowCountMsgData,
   GetRowsMsgData,
   InitDbPayloadData,
   InitSourceMsgData,
   InsertRowsMsgData,
+  MergeRegionDataMsgData,
   SyncDoneMsgData,
   SyncServerRowsMsgData,
   WorkerMessageParams,
@@ -33,6 +35,7 @@ import {
   writeChanges,
 } from './db/messageProcessors/storageProcessors';
 import { getLastSync } from './db/metaTable';
+import { getRegionData, mergeRegionData } from './db/regionStorageTable';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
   postMessage(obj);
@@ -245,6 +248,36 @@ function sendMsgToMain(obj: WorkerMessageParams) {
             messageType: WorkerMessageType.DeleteLocalChangesResult,
             data: res,
           };
+          sendMsgToMain(result);
+
+          break;
+        }
+
+        case WorkerMessageType.MergeRegionData: {
+          const props = data.data as MergeRegionDataMsgData;
+          const res = mergeRegionData(props);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.MergeRegionDataResponse,
+            data: res,
+          };
+
+          sendMsgToMain(result);
+
+          break;
+        }
+
+        case WorkerMessageType.GetRegionData: {
+          const props = data.data as GetRegionDataMsgData;
+          const res = getRegionData(props);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.GetRegionDataResponse,
+            data: res,
+          };
+
           sendMsgToMain(result);
 
           break;

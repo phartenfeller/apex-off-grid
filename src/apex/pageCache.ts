@@ -12,17 +12,8 @@ async function cachePage(apex: any) {
   const cacheResponse = await cache.match(url, { ignoreSearch: true });
   // if page existing in cache
   if (cacheResponse) {
-    // recache after 30 mins
-    if (
-      Date.now() >
-      Date.parse(cacheResponse.headers.get('date')) + 1000 * 60 * 30
-    ) {
-      // remove old entry
-      await cache.delete(url, { ignoreSearch: true });
-    } else {
-      // if not expired, return
-      return;
-    }
+    // delete old cache page
+    await cache.delete(url, { ignoreSearch: true });
   }
   await cache.put(url, response);
   apex.debug.info('cached', url);

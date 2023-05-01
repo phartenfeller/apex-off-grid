@@ -1,4 +1,10 @@
-import { Colinfo, ColStructure, DbRow, OrderByDir } from './worker/db/types';
+import {
+  AnyObject,
+  Colinfo,
+  ColStructure,
+  DbRow,
+  OrderByDir,
+} from './worker/db/types';
 
 export const YELLOW_CONSOLE = 'color: yellow';
 export const CYAN_CONSOLE = 'color: cyan';
@@ -33,6 +39,10 @@ export enum WorkerMessageType {
   GetLocalChangesResult = 'get_local_changes_result',
   DeleteLocalChanges = 'delete_local_changes',
   DeleteLocalChangesResult = 'delete_local_changes_result',
+  MergeRegionData = 'merge_region_data',
+  MergeRegionDataResponse = 'merge_region_data_response',
+  GetRegionData = 'get_region_data',
+  GetRegionDataResponse = 'get_region_data_response',
 }
 
 export type WorkerMessageParams = {
@@ -185,3 +195,28 @@ export enum DbStatus {
   Error = 'error',
   Initializing = 'initializing...',
 }
+
+export type MergeRegionDataMsgData = BaseRequestData & {
+  appId: number;
+  pageId: number;
+  regionId: string;
+  dataKey: string;
+  regionDataJson: AnyObject;
+};
+
+export type MergeRegionDataResponse = {
+  ok: boolean;
+  error?: string;
+};
+
+export type GetRegionDataMsgData = BaseRequestData & {
+  appId: number;
+  pageId: number;
+  regionId: string;
+  dataKey: string;
+};
+
+export type GetRegionDataResponse = {
+  data: AnyObject;
+  error?: string;
+};

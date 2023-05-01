@@ -14,5 +14,6 @@ export type ColStructure = {
 };
 
 export type DbRow = { [key: string]: number | string | undefined | null };
+export type AnyObject = { [key: string]: any };
 
 export type OrderByDir = 'asc' | 'desc';

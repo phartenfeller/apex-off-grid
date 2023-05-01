@@ -3,12 +3,14 @@ import { ajax } from './apex/ajax';
 import cachePage from './apex/pageCache';
 import {
   DbStatus,
+  GetRegionDataMsgData,
   InitDbMsgData,
   InitDbPayloadData,
   InitSourceMsgData,
   InitSourceResponse,
   InsertRowsMsgData,
   InsertRowsResponse,
+  MergeRegionDataMsgData,
   WorkerMessageParams,
   WorkerMessageType,
   YELLOW_CONSOLE,
@@ -306,6 +308,10 @@ function _storageIsReady({ storageId, storageVersion }: StorageInfo) {
 
 const storageCallbacks: { [key: string]: (() => void)[] } = {};
 
+/**
+ * Pass a callback function that gets called when the storage is ready (sync done or data initially loaded).
+ * Use "waitTillStorageReady" if you want an async function.
+ */
 function _addStorageReadyCb({
   storageId,
   storageVersion,
@@ -329,6 +335,15 @@ function _addStorageReadyCb({
   }
 }
 
+/**
+ * Returns a promise that resolves when the storage is ready (sync done or data initially loaded).
+ */
+function _waitTillStorageReady({ storageId, storageVersion }: StorageInfo) {
+  return new Promise<void>((resolve) =>
+    _addStorageReadyCb({ storageId, storageVersion, cb: resolve }),
+  );
+}
+
 export function callStorageCallbacks({
   storageId,
   storageVersion,
@@ -347,6 +362,45 @@ export function callStorageCallbacks({
     storageCallbacks[storageKey].forEach((cb) => cb());
     storageCallbacks[storageKey] = [];
   }
+}
+
+/**
+ *
+ * @param args
+ * @param args.appId
+ * @param args.pageId
+ * @param args.regionId
+ * @param args.dataKey
+ * @param args.regionDataJson
+ */
+async function _mergeRegionData(args: MergeRegionDataMsgData) {
+  const { data } = await sendMsgToWorker({
+    storageId: '',
+    storageVersion: 0,
+    messageType: WorkerMessageType.MergeRegionData,
+    data: args,
+    expectedMessageType: WorkerMessageType.MergeRegionDataResponse,
+  });
+  return data;
+}
+
+/**
+ *
+ * @param args
+ * @param args.appId
+ * @param args.pageId
+ * @param args.regionId
+ * @param args.dataKey
+ */
+async function _getRegionData(args: GetRegionDataMsgData) {
+  const { data } = await sendMsgToWorker({
+    storageId: '',
+    storageVersion: 0,
+    messageType: WorkerMessageType.GetRegionData,
+    data: args,
+    expectedMessageType: WorkerMessageType.GetRegionDataResponse,
+  });
+  return data;
 }
 
 if (!window.hartenfeller_dev) {
@@ -380,6 +434,14 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
 
   window.hartenfeller_dev.plugins.sync_offline_data.addStorageReadyCb =
     _addStorageReadyCb;
+
+  window.hartenfeller_dev.plugins.sync_offline_data.waitTillStorageReady =
+    _waitTillStorageReady;
+
+  window.hartenfeller_dev.plugins.sync_offline_data.regionStorage = {
+    mergeRegionData: _mergeRegionData,
+    getRegionData: _getRegionData,
+  };
 }
 
 (() => {

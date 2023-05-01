@@ -45,8 +45,10 @@ export async function initDb(): Promise<InitDbMsgData> {
               db = new oo.OpfsDb(DB_NAME) as DB;
               log.info('The OPFS is available.');
             } else {
-              db = new oo.DB(DB_NAME, 'ct') as DB;
-              log.info('The OPFS is not available.');
+              const message =
+                'The OPFS is not available. You may need to set these headers: https://sqlite.org/wasm/doc/trunk/persistence.md#:~:text=%E2%9A%A0%EF%B8%8FAchtung%3A%20COOP%20and%20COEP%20HTTP%20Headers or use a modern browser.';
+              log.error(message);
+              throw new Error(message);
             }
             log.info('transient db =', (db as any).filename);
 
