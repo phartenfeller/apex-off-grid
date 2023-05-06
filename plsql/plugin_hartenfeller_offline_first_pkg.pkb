@@ -240,7 +240,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
       l_sync_row := l_sync_template_row;
       l_sync_row.sync_data_json := TREAT(l_rows_arr.get(i) AS JSON_OBJECT_T).to_clob();
 
-      insert into offline_data_sync values l_sync_row;
+      insert into offline_data_sync values l_sync_row returning sync_id into l_sync_row.sync_id;
 
       offline_data_sync_api.sync_row(l_sync_row);
     end loop;
@@ -464,6 +464,40 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
       apex_json.close_all;
       raise;
   end ajax_da;
+
+
+  function render_ag_grid_offline_da( 
+    p_dynamic_action apex_plugin.t_dynamic_action
+  , p_plugin         apex_plugin.t_plugin
+  )
+    return apex_plugin.t_dynamic_action_render_result
+  as
+    l_return apex_plugin.t_dynamic_action_render_result;
+
+    l_region_id varchar2(4000);
+  begin
+      if apex_application.g_debug then
+          apex_plugin_util.debug_dynamic_action
+            ( p_plugin         => p_plugin
+            , p_dynamic_action => p_dynamic_action
+            );
+      end if;
+
+      select coalesce(static_id,  'R'||to_char(region_id))
+      into l_region_id
+      from apex_application_page_regions
+      where region_id = p_dynamic_action.affected_region_id;
+
+    l_return.javascript_function := 'function() {window.hartenfeller_dev.plugins.ag_grid_offline_da.saveGrid({'|| 
+                                  apex_javascript.add_attribute( p_name => 'regionId', p_value => l_region_id) ||
+                                  '})  }';
+
+      
+
+      apex_debug.message('render');
+
+      return l_return;
+  end render_ag_grid_offline_da;
 
 
 end plugin_hartenfeller_offline_first_pkg;

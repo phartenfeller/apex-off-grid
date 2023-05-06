@@ -77,6 +77,11 @@ export function sendMsgToWorker({
       cb,
     });
 
+    apex.debug.trace('Sending message to worker', {
+      messageId,
+      messageType,
+      data,
+    });
     worker.postMessage({
       messageId,
       messageType,

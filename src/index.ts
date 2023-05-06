@@ -87,7 +87,8 @@ async function initDb() {
       DbStatus.Initialized;
   } else {
     window.hartenfeller_dev.plugins.sync_offline_data.dbStauts = DbStatus.Error;
-    apex.debug.error(`Could not initialize DB: ${error}`);
+    apex.debug.error();
+    apex.message.alert(`Could not initialize DB: ${error}`);
   }
 }
 
@@ -99,7 +100,9 @@ worker.addEventListener(
     if (data.messageType === WorkerMessageType.Loaded) {
       apex.debug.info('Worker loaded');
       initMsgBus(worker, apex);
-      initDb();
+      apex.debug.info('Initialized message bus. Calling initDb()');
+      await initDb();
+      apex.debug.info('Db successfully initialized');
     } else {
       apex.debug.error(
         `Excpected message type ${WorkerMessageType.Loaded} but got: ${data.messageType}`,

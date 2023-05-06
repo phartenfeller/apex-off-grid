@@ -148,7 +148,10 @@ create or replace package body offline_data_sync_api as
       process_people_v1(pi_row, l_success);
     else
       raise_application_error(-20001, 'Unhandeled sync_storage_id or sync_storage_version => ' || pi_row.sync_storage_id || ' ' || pi_row.sync_storage_version);
+      return;
     end case;
+
+    logger.log('l_success => ' || case when l_success then 'true' else 'false' end, l_scope, null, l_params);
 
     if not l_success then
 
@@ -158,9 +161,9 @@ create or replace package body offline_data_sync_api as
 
     else
 
-      delete from offline_data_sync
-            where sync_id = pi_row.sync_id;
-
+      update offline_data_sync
+         set sync_success_at = sysdate
+       where sync_id = pi_row.sync_id;
     end if;
 
     logger.log('END', l_scope, null, l_params);

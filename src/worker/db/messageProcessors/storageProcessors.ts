@@ -14,6 +14,7 @@ import {
   WriteChangesMsgData,
   WriteChangesResponse,
 } from '../../../globalConstants';
+import randomId from '../../../util/randomId';
 import { log } from '../../util/logger';
 import { db } from '../initDb';
 import { getPkColType, getStorageColumns, updateLastSync } from '../metaTable';
@@ -24,7 +25,7 @@ import { CHANGE_TS_COL, CHANGE_TYPE_COL } from '../userTables';
 function prepareSearchTerm(searchTerm: string, colnames: string[]) {
   const coalescedCols = colnames.map((c) => `coalesce(${c}, '')`).join(' || ');
   return {
-    where: `where (lower(${coalescedCols}) LIKE $searchTerm)`,
+    where: `where (lower(${coalescedCols}) LIKE $searchTerm) and (__change_type is null or __change_type != 'D')`,
     bindVal: `%${searchTerm.replaceAll('%', '/%').toLowerCase()}%`,
   };
 }
@@ -58,7 +59,7 @@ export function getRowByPk(
   try {
     const colStructure = getStorageColumns(storageId, storageVersion);
 
-    const sql = `select * from ${storageId}_v${storageVersion} where ${colStructure.pkCol} = $pk`;
+    const sql = `select * from ${storageId}_v${storageVersion} where ${colStructure.pkCol} = $pk and (__change_type is null or __change_type != 'D')`;
     const binds = {
       $pk: pk,
     };
@@ -125,7 +126,10 @@ export function getRows({
       sql = sql.replace('#WHERE#', where);
       binds['$searchTerm'] = bindVal;
     } else {
-      sql = sql.replace('#WHERE#', '');
+      sql = sql.replace(
+        '#WHERE#',
+        `where (__change_type is null or __change_type != 'D')`,
+      );
     }
 
     log.trace('getRows sql:', sql, binds);
@@ -267,6 +271,23 @@ export function writeChanges({
             );
           `;
 
+            if (!row[colStructure.pkCol]) {
+              const pkColType = getPkColType(colStructure);
+
+              switch (pkColType) {
+                case 'real':
+                  row[colStructure.pkCol] = new Date().getTime();
+                  break;
+
+                case 'text':
+                  row[colStructure.pkCol] = randomId();
+                  break;
+
+                default:
+                  throw new Error(`Unknown pkColType: ${pkColType}`);
+              }
+            }
+
             for (const { colname } of colStructure.cols) {
               binds[`$${colname}`] = row[colname];
             }
@@ -352,11 +373,14 @@ export function writeChanges({
 
           case 'D':
             sql = `
-            delete from ${storageId}_v${storageVersion}
+            update ${storageId}_v${storageVersion}
+            set ${CHANGE_TS_COL} = $${CHANGE_TS_COL}
+              , ${CHANGE_TYPE_COL} = 'D'
             where ${colStructure.pkCol} = $${colStructure.pkCol}
           `;
 
             binds[`$${colStructure.pkCol}`] = row[colStructure.pkCol];
+            binds[`$${CHANGE_TS_COL}`] = Date.now();
 
             if (!loggedDeleteQuery) {
               log.trace('writeChanges delete sql:', sql, binds);

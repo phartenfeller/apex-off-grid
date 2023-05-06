@@ -157,7 +157,7 @@ async function _writeChanges({
   return { ok, error };
 }
 
-function _sync({
+async function _sync({
   storageId,
   storageVersion,
   pageSize,
@@ -168,7 +168,7 @@ function _sync({
   apex: any;
   ajaxId: string;
 }) {
-  syncRows({
+  await syncRows({
     ajaxId,
     storageId,
     storageVersion,
@@ -176,6 +176,7 @@ function _sync({
     pageSize,
     online: navigator.onLine,
   });
+  apex.message.showPageSuccess('Sync finished!');
 }
 
 export type StorageMethodConfig = {

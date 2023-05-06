@@ -38,7 +38,14 @@ import { getLastSync } from './db/metaTable';
 import { getRegionData, mergeRegionData } from './db/regionStorageTable';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
+  log.trace('Sending message to worker', {
+    obj,
+  });
   postMessage(obj);
+}
+
+async function pause(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 (async function () {
@@ -60,6 +67,7 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           importScripts(fullUrl);
 
           const res = await initDb();
+          log.trace('initDb result in Worker', { res });
 
           if (res.ok) {
             initTables();

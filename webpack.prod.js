@@ -9,6 +9,7 @@ const entryWorker = path.resolve(__dirname, 'src', 'worker', 'opfs-worker.ts');
 const outputPath = path.resolve(__dirname, 'dist');
 
 export default {
+  target: 'browserslist',
   entry: {
     index: entry,
     'index.min': entry,

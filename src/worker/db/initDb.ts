@@ -23,11 +23,25 @@ function optimizeDb() {
   log.trace('Finish optimizing database');
 }
 
+const logX = (...args: any[]) => console.log(...args);
+const errorX = (...args: any[]) => console.error(...args);
+
 export async function initDb(): Promise<InitDbMsgData> {
+  log.trace('Start initializing database in worker', self);
   return new Promise((resolve) => {
     try {
       self
-        .sqlite3InitModule({ print: log.info, printErr: log.error })
+        .sqlite3InitModule(
+          {
+            print: logX,
+            printErr: errorX,
+          },
+          // {
+          //   print: console.log,
+          //   printErr: console.error,
+          // },
+          // { print: log.info, printErr: log.error }
+        )
         .then((sqlite3: any) => {
           try {
             log.info('Initialized sqlite3 module.', sqlite3);
@@ -66,6 +80,9 @@ export async function initDb(): Promise<InitDbMsgData> {
             log.error(`Could not initialize database: ${e.message}`);
             resolve({ ok: false, error: e.message });
           }
+        })
+        .catch((e: any) => {
+          throw e;
         });
     } catch (e) {
       log.error(`Could not initialize database: ${e.message}`);
