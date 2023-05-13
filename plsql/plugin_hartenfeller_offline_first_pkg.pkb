@@ -24,6 +24,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
     l_last_changed_colname p_dynamic_action.attribute_05%type := p_dynamic_action.attribute_05;
     l_page_size            p_dynamic_action.attribute_06%type := p_dynamic_action.attribute_06;
     l_sync_timeout         p_dynamic_action.attribute_07%type := p_dynamic_action.attribute_07;
+    l_mode                 p_dynamic_action.attribute_08%type := p_dynamic_action.attribute_08;
   begin
     if apex_application.g_debug then
         apex_plugin_util.debug_dynamic_action
@@ -45,6 +46,7 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
                                   apex_javascript.add_attribute( p_name => 'lastChangedColname', p_value => l_last_changed_colname ) ||
                                   apex_javascript.add_attribute( p_name => 'pageSize', p_value => to_number(l_page_size) ) || 
                                   apex_javascript.add_attribute( p_name => 'syncTimeoutMins', p_value => to_number(l_sync_timeout) ) || 
+                                  apex_javascript.add_attribute( p_name => 'mode', p_value => l_mode ) ||
                                   '}), 1000)  }';
 
     apex_debug.message('render');

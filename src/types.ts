@@ -1,4 +1,6 @@
-export type StorageInfo = {
-  storageId: string;
-  storageVersion: number;
-};
+export type StorageInitMode =
+  | 'DEFAULT'
+  | 'FORCE_SYNC'
+  | 'LOAD_EXISTING'
+  | 'LOAD_SYNC_EXISTING'
+  | 'DEPRECATED';

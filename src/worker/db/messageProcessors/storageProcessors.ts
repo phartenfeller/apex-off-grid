@@ -15,6 +15,7 @@ import {
   WriteChangesResponse,
 } from '../../../globalConstants';
 import randomId from '../../../util/randomId';
+import getTabname from '../../util/getTabname';
 import { log } from '../../util/logger';
 import { db } from '../initDb';
 import { getPkColType, getStorageColumns, updateLastSync } from '../metaTable';
@@ -34,6 +35,7 @@ export function getColInfo(
   storageId: string,
   storageVersion: number,
 ): GetColInfoResponse {
+  const tabname = getTabname({ storageId, storageVersion });
   try {
     const colStructure = getStorageColumns(storageId, storageVersion);
 
@@ -42,7 +44,7 @@ export function getColInfo(
       colInfo: colStructure,
     };
   } catch (err) {
-    const msg = `Error getting col info for ${storageId}_v${storageVersion}: ${err}`;
+    const msg = `Error getting col info for ${tabname}: ${err}`;
     log.error(msg);
     return {
       ok: false,
@@ -56,10 +58,11 @@ export function getRowByPk(
   storageVersion: number,
   pk: string | number,
 ): GetRowByPkResponse {
+  const tabname = getTabname({ storageId, storageVersion });
   try {
     const colStructure = getStorageColumns(storageId, storageVersion);
 
-    const sql = `select * from ${storageId}_v${storageVersion} where ${colStructure.pkCol} = $pk and (__change_type is null or __change_type != 'D')`;
+    const sql = `select * from ${tabname} where ${colStructure.pkCol} = $pk and (__change_type is null or __change_type != 'D')`;
     const binds = {
       $pk: pk,
     };
@@ -72,7 +75,7 @@ export function getRowByPk(
       row: data,
     };
   } catch (err) {
-    const msg = `Error getting row by pk ${storageId}_v${storageVersion}: ${err}`;
+    const msg = `Error getting row by pk ${tabname}: ${err}`;
     log.error(msg);
     return {
       ok: false,
@@ -90,15 +93,16 @@ export function getRows({
   orderByDir = 'asc',
   searchTerm,
 }: GetRowsMsgData): GetRowsResponse {
+  const tabname = getTabname({ storageId, storageVersion });
   try {
-    let sql = `select * from ${storageId}_v${storageVersion} #WHERE# #ORDER_BY# #LIMIT#`;
+    let sql = `select * from ${tabname} #WHERE# #ORDER_BY# #LIMIT#`;
     const colStructure = getStorageColumns(storageId, storageVersion);
     const colnames = colStructure.cols.map((c) => c.colname);
 
     if (orderByCol) {
       if (!colnames.includes(orderByCol.toUpperCase())) {
         log.warn(
-          `Column "${orderByCol.toUpperCase()}" not found. Skipping order by for ${storageId}_v${storageVersion}`,
+          `Column "${orderByCol.toUpperCase()}" not found. Skipping order by for ${tabname}`,
         );
         sql = sql.replace('#ORDER_BY#', 'order by 1');
       } else {
@@ -141,7 +145,7 @@ export function getRows({
       rows: data,
     };
   } catch (err) {
-    const msg = `Error getting rows for ${storageId}_v${storageVersion}: ${err}`;
+    const msg = `Error getting rows for ${tabname}: ${err}`;
     log.error(msg);
     return {
       ok: false,
@@ -155,8 +159,9 @@ export function getRowCount({
   storageId,
   searchTerm,
 }: GetRowCountMsgData): GetRowCountResponse {
+  const tabname = getTabname({ storageId, storageVersion });
   try {
-    let sql = `select count(*) as rowCount from ${storageId}_v${storageVersion} #WHERE#`;
+    let sql = `select count(*) as rowCount from ${tabname} #WHERE#`;
 
     const binds: DbRow = {};
 
@@ -181,7 +186,7 @@ export function getRowCount({
       rowCount: data.rowCount,
     };
   } catch (err) {
-    const msg = `Error getting row count for ${storageId}_v${storageVersion}: ${err}`;
+    const msg = `Error getting row count for ${tabname}: ${err}`;
     log.error(msg);
     return {
       ok: false,
@@ -224,6 +229,7 @@ export function writeChanges({
   let loggedUpdateQuery = false;
   let loggedDeleteQuery = false;
   let ok = true;
+  const tabname = getTabname({ storageId, storageVersion });
 
   try {
     const colStructure = getStorageColumns(storageId, storageVersion);
@@ -239,7 +245,7 @@ export function writeChanges({
         if (!row[CHANGE_TYPE_COL]) {
           ok = false;
           log.error(
-            `Row has no "${CHANGE_TYPE_COL}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
+            `Row has no "${CHANGE_TYPE_COL}" property. Set this to 'I', 'U' or 'D' (${tabname})`,
             row,
           );
 
@@ -247,7 +253,7 @@ export function writeChanges({
         } else if (!['I', 'U', 'D'].includes(row[CHANGE_TYPE_COL] as string)) {
           ok = false;
           log.error(
-            `Row has invalid "${CHANGE_TYPE_COL}" property. Set this to 'I', 'U' or 'D' (${storageId}_v${storageVersion})`,
+            `Row has invalid "${CHANGE_TYPE_COL}" property. Set this to 'I', 'U' or 'D' (${tabname})`,
             row,
           );
 
@@ -260,7 +266,7 @@ export function writeChanges({
         switch (row[CHANGE_TYPE_COL]) {
           case 'I':
             sql = `
-            insert into ${storageId}_v${storageVersion} (
+            insert into ${tabname} (
               ${colStructure.cols.map((c) => c.colname).join(',\n')}
               , ${CHANGE_TS_COL}
               , ${CHANGE_TYPE_COL}
@@ -304,12 +310,7 @@ export function writeChanges({
               insStmnt.stepReset();
             } catch (err) {
               ok = false;
-              log.error(
-                `Error updating row (${storageId}_v${storageVersion}):`,
-                err,
-                sql,
-                binds,
-              );
+              log.error(`Error updating row (${tabname}):`, err, sql, binds);
             }
             insStmnt.finalize();
 
@@ -328,14 +329,14 @@ export function writeChanges({
               log.info(
                 `Row ${
                   row[colStructure.pkCol]
-                } has no changes (${storageId}_v${storageVersion}). Skipping...`,
+                } has no changes (${tabname}). Skipping...`,
                 row,
               );
               continue;
             }
 
             sql = `
-            update ${storageId}_v${storageVersion}
+            update ${tabname}
             set ${userCols.map((c) => `${c} = $${c}`).join(',\n')}
               , ${CHANGE_TS_COL} = $${CHANGE_TS_COL}
               , ${CHANGE_TYPE_COL} = $${CHANGE_TYPE_COL}
@@ -360,12 +361,7 @@ export function writeChanges({
               updateStmnt.stepReset();
             } catch (err) {
               ok = false;
-              log.error(
-                `Error updating row (${storageId}_v${storageVersion}):`,
-                err,
-                sql,
-                binds,
-              );
+              log.error(`Error updating row (${tabname}):`, err, sql, binds);
             }
             updateStmnt.finalize();
 
@@ -373,7 +369,7 @@ export function writeChanges({
 
           case 'D':
             sql = `
-            update ${storageId}_v${storageVersion}
+            update ${tabname}
             set ${CHANGE_TS_COL} = $${CHANGE_TS_COL}
               , ${CHANGE_TYPE_COL} = 'D'
             where ${colStructure.pkCol} = $${colStructure.pkCol}
@@ -393,12 +389,7 @@ export function writeChanges({
             } catch (err) {
               delStmnt.finalize();
               ok = false;
-              log.error(
-                `Error deleting row (${storageId}_v${storageVersion}):`,
-                err,
-                sql,
-                binds,
-              );
+              log.error(`Error deleting row (${tabname}):`, err, sql, binds);
             }
             delStmnt.finalize();
         }
@@ -412,7 +403,7 @@ export function writeChanges({
         : 'One or more rows failed to process. See browser console for more info',
     };
   } catch (err) {
-    const msg = `Error writing changes for ${storageId}_v${storageVersion}: ${err}`;
+    const msg = `Error writing changes for ${tabname}: ${err}`;
     log.error(msg);
     return {
       ok: false,
@@ -425,8 +416,9 @@ export function getLocalChanges({
   storageId,
   storageVersion,
 }: GetLocalChangesMsgData): GetLocalChangesResponse {
+  const tabname = getTabname({ storageId, storageVersion });
   try {
-    const sql = `select * from ${storageId}_v${storageVersion} where ${CHANGE_TYPE_COL} is not null`;
+    const sql = `select * from ${tabname} where ${CHANGE_TYPE_COL} is not null`;
     const data = db.selectObjects(sql);
 
     return {
@@ -434,7 +426,7 @@ export function getLocalChanges({
       rows: data,
     };
   } catch (err) {
-    const msg = `Error getting local change rows for ${storageId}_v${storageVersion}: ${err}`;
+    const msg = `Error getting local change rows for ${tabname}: ${err}`;
     log.error(msg);
     return {
       ok: false,
@@ -450,10 +442,11 @@ export function syncDone({
 }: SyncDoneMsgData): SyncDoneResponse {
   const structure = getStorageColumns(storageId, storageVersion);
   const pkColType = getPkColType(structure);
+  const tabname = getTabname({ storageId, storageVersion });
 
   let res = removeServerDeletedRows({
     syncId,
-    tableName: `${storageId}_v${storageVersion}`,
+    tableName: tabname,
     pkColname: structure.pkCol,
     pkIsNum: pkColType === 'real',
   });
@@ -471,7 +464,8 @@ export function deleteLocalChanges({
   storageId,
   storageVersion,
 }: DeleteLocalChangesMsgData): DeleteLocalChangesResponse {
-  const sql = `delete from ${storageId}_v${storageVersion} where ${CHANGE_TYPE_COL} is not null;`;
+  const tabname = getTabname({ storageId, storageVersion });
+  const sql = `delete from ${tabname} where ${CHANGE_TYPE_COL} is not null;`;
 
   try {
     db.exec(sql);
@@ -480,7 +474,7 @@ export function deleteLocalChanges({
       ok: true,
     };
   } catch (err) {
-    const msg = `Error deleting local change rows for ${storageId}_v${storageVersion}: ${err}`;
+    const msg = `Error deleting local change rows for ${tabname}: ${err}`;
     log.error(msg);
     return {
       ok: false,

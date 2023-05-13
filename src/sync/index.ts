@@ -165,6 +165,7 @@ export async function syncRows({
   apex,
   pageSize,
   online,
+  deprecatedSync = false,
 }: {
   ajaxId: string;
   storageId: string;
@@ -172,6 +173,7 @@ export async function syncRows({
   apex: any;
   pageSize: number;
   online: boolean;
+  deprecatedSync?: boolean;
 }) {
   if (!online) {
     apex.debug.log('Skipping sync rows. Not online.');
@@ -199,6 +201,14 @@ export async function syncRows({
 
   if (!ok) {
     apex.debug.error(`Stopping sync rows. Could not delete local changes.`);
+    return;
+  }
+
+  if (deprecatedSync) {
+    apex.debug.info(
+      `%c Deprecated sync: sent local changes for ${storageId} v${storageVersion}. Can now delete storage.`,
+      CYAN_CONSOLE,
+    );
     return;
   }
 

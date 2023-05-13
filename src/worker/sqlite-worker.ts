@@ -36,16 +36,13 @@ import {
 } from './db/messageProcessors/storageProcessors';
 import { getLastSync } from './db/metaTable';
 import { getRegionData, mergeRegionData } from './db/regionStorageTable';
+import removeStorage from './db/messageProcessors/removeStorage';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
   log.trace('Sending message to worker', {
     obj,
   });
   postMessage(obj);
-}
-
-async function pause(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 (async function () {
@@ -132,6 +129,18 @@ async function pause(ms: number) {
           result = {
             messageId: data.messageId,
             messageType: WorkerMessageType.SyncServerRowsResult,
+            data: res,
+          };
+          sendMsgToMain(result);
+
+          break;
+        }
+        case WorkerMessageType.RemoveStorage: {
+          const res = removeStorage(data.data);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.RemoveStorageResult,
             data: res,
           };
           sendMsgToMain(result);

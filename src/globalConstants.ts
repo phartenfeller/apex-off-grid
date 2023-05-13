@@ -21,6 +21,8 @@ export enum WorkerMessageType {
   CheckSyncRowsResult = 'check_sync_rows_result',
   SyncServerRows = 'sync_server_rows',
   SyncServerRowsResult = 'sync_server_rows_result',
+  RemoveStorage = 'remove_storage',
+  RemoveStorageResult = 'remove_storage_result',
   GetColInfo = 'get_col_info',
   GetColInfoResponse = 'get_col_info_response',
   GetRowByPk = 'get_row_by_pk',
@@ -51,10 +53,12 @@ export type WorkerMessageParams = {
   data?: any;
 };
 
-type BaseRequestData = {
+export type StorageInfo = {
   storageId: string;
   storageVersion: number;
 };
+
+type BaseRequestData = StorageInfo;
 
 export type InitDbMsgData = {
   ok: boolean;
@@ -102,6 +106,13 @@ export type SyncServerRowsMsgData = BaseRequestData & {
 };
 
 export type SyncServerRowsResponse = {
+  ok: boolean;
+  error?: string;
+};
+
+export type RemoveStorageMsgData = BaseRequestData;
+
+export type RemoveStorageResponse = {
   ok: boolean;
   error?: string;
 };

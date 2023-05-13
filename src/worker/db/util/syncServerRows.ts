@@ -1,4 +1,5 @@
 import { SyncServerRowsResponse } from '../../../globalConstants';
+import getTabname from '../../util/getTabname';
 import { log } from '../../util/logger';
 import { db } from '../initDb';
 import { getStorageColumns } from '../metaTable';
@@ -14,9 +15,10 @@ export default function syncServerRows({
 }): SyncServerRowsResponse {
   try {
     const structure = getStorageColumns(storageId, storageVersion);
+    const tabname = getTabname({ storageId, storageVersion });
 
     let sql = `
-      insert into ${storageId}_v${storageVersion} (
+      insert into ${tabname} (
         #INSERT_COLS#
       ) values (
         #INSERT_VALUES#

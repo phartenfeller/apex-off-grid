@@ -1,7 +1,7 @@
 import {
-  GetLastSyncMsgData,
   GetLastSyncResponse,
   InitSourceMsgData,
+  StorageInfo,
   SyncDoneResponse,
 } from '../../globalConstants';
 import { log } from '../util/logger';
@@ -30,6 +30,20 @@ function createMetaTable() {
 
   db.exec(sql);
   log.info('created meta table');
+}
+
+export function removeMetaEntry({ storageId, storageVersion }: StorageInfo) {
+  const exists = checkMetaEntryExists(storageId, storageVersion);
+  if (!exists) {
+    return;
+  }
+
+  const sql = `DELETE FROM ${META_TABLE} WHERE storage_id = $storageId AND storage_version = $storageVersion;`;
+  log.trace('removeMetaEntry sql:', sql);
+
+  db.exec(sql, {
+    bind: { $storageId: storageId, $storageVersion: storageVersion },
+  });
 }
 
 export function addMetaEntry({
@@ -142,7 +156,7 @@ export function getPkColType(structure: ColStructure) {
 export function getLastSync({
   storageId,
   storageVersion,
-}: GetLastSyncMsgData): GetLastSyncResponse {
+}: StorageInfo): GetLastSyncResponse {
   const sql = `select last_sync as lastSync from ${META_TABLE} where storage_id = $storageId and storage_version = $storageVersion;`;
   const binds = {
     $storageId: storageId,
@@ -165,10 +179,7 @@ export function getLastSync({
 export function updateLastSync({
   storageId,
   storageVersion,
-}: {
-  storageId: string;
-  storageVersion: number;
-}): SyncDoneResponse {
+}: StorageInfo): SyncDoneResponse {
   const sql = `update ${META_TABLE} set last_sync = $lastSync where storage_id = $storageId and storage_version = $storageVersion;`;
   const binds = {
     $storageId: storageId,

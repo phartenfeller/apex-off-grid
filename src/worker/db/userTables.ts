@@ -1,4 +1,8 @@
-import { InitSourceMsgData, InitSourceResponse } from '../../globalConstants';
+import {
+  InitSourceMsgData,
+  InitSourceResponse,
+  StorageInfo,
+} from '../../globalConstants';
 import { log } from '../util/logger';
 import { db } from './initDb';
 import { addMetaEntry, checkMetaEntryExists, initMetaTable } from './metaTable';
@@ -114,4 +118,13 @@ export async function initSource({
     log.error('initSource error:', err);
     return { ok: false, error: err.message };
   }
+}
+
+export function removeUserTable({ storageId, storageVersion }: StorageInfo) {
+  const tabname = `${storageId}_v${storageVersion}`;
+  const sql = `DROP TABLE ${tabname};`;
+  log.trace('removeUserTable sql:', sql);
+
+  db.exec(sql);
+  log.info(`removed table "${tabname}"`);
 }

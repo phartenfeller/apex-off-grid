@@ -11,6 +11,8 @@ import {
   InsertRowsMsgData,
   InsertRowsResponse,
   MergeRegionDataMsgData,
+  RemoveStorageResponse,
+  StorageInfo,
   WorkerMessageParams,
   WorkerMessageType,
   YELLOW_CONSOLE,
@@ -18,7 +20,7 @@ import {
 import { initMsgBus, sendMsgToWorker } from './messageBus';
 import initStorageMethods, { setStorageReady } from './storageMethods';
 import { syncRows, getLastSync } from './sync';
-import { StorageInfo } from './types';
+import { StorageInitMode } from './types';
 import { Colinfo } from './worker/db/types';
 
 declare global {
@@ -171,6 +173,120 @@ async function fetchAllRows({
   }
 }
 
+async function initStorageWithoutSource({
+  storageId,
+  storageVersion,
+  ajaxId,
+  pageSize,
+}: {
+  storageId: string;
+  storageVersion: number;
+  ajaxId: string;
+  pageSize: number;
+}) {
+  const payload: InitSourceMsgData = { storageId, storageVersion };
+
+  const { data } = await sendMsgToWorker({
+    storageId,
+    storageVersion,
+    messageType: WorkerMessageType.InitSource,
+    data: payload,
+    expectedMessageType: WorkerMessageType.InitSourceResult,
+  });
+
+  const { ok, error } = data as InitSourceResponse;
+  apex.debug.info('%c initStorage result', YELLOW_CONSOLE, data);
+
+  if (!ok) {
+    const errm = `Could not initialize Storage ${storageId} v${storageVersion}: ${error}`;
+    apex.debug.error(errm);
+    throw new Error(errm);
+  }
+
+  initStorageMethods({ storageId, storageVersion, apex, pageSize, ajaxId });
+}
+
+async function initStorageWithSource({
+  storageId,
+  storageVersion,
+  ajaxId,
+  pkColname,
+  lastChangedColname,
+  pageSize,
+  online,
+}: {
+  storageId: string;
+  storageVersion: number;
+  ajaxId: string;
+  pkColname?: string;
+  lastChangedColname?: string;
+  pageSize: number;
+  online: boolean;
+}) {
+  if (!online) {
+    initStorageWithoutSource({ storageId, storageVersion, ajaxId, pageSize });
+  }
+
+  if (!pkColname || !lastChangedColname) {
+    const errm = `pkColname or lastChangedColname not set for ${storageId} v${storageVersion}`;
+    apex.debug.error(errm);
+    throw new Error(errm);
+  }
+
+  const payload: InitSourceMsgData = { storageId, storageVersion };
+
+  const res = (await ajax({
+    apex,
+    ajaxId,
+    method: 'source_structure',
+  })) as any;
+
+  if (!res?.source_structure) {
+    apex.debug.error('No source_structure in response', res);
+    return;
+  }
+
+  const colData: Colinfo[] = res.source_structure;
+
+  payload.colData = colData;
+  payload.pkColname = pkColname;
+  payload.lastChangedColname = lastChangedColname;
+
+  const { data } = await sendMsgToWorker({
+    storageId,
+    storageVersion,
+    messageType: WorkerMessageType.InitSource,
+    data: payload,
+    expectedMessageType: WorkerMessageType.InitSourceResult,
+  });
+
+  const { ok, error, isEmpty } = data as InitSourceResponse;
+  apex.debug.info('%c initStorage result', YELLOW_CONSOLE, data);
+
+  if (!ok) {
+    const errm = `Could not initialize Storage ${storageId} v${storageVersion}: ${error}`;
+    apex.debug.error(errm);
+    throw new Error(errm);
+  }
+
+  initStorageMethods({ storageId, storageVersion, apex, pageSize, ajaxId });
+
+  return isEmpty;
+}
+
+async function syncNeeded({
+  storageId,
+  storageVersion,
+  syncTimeoutMins,
+}: {
+  storageId: string;
+  storageVersion: number;
+  syncTimeoutMins: number;
+}) {
+  const lastSync = await getLastSync({ storageId, storageVersion });
+  return !lastSync || lastSync < Date.now() - syncTimeoutMins * 60 * 1000;
+}
+
 async function initStorage({
   ajaxId,
   storageId,
@@ -180,13 +296,15 @@ async function initStorage({
   pageSize = 500,
   syncTimeoutMins = 60,
   online = navigator.onLine,
+  mode,
 }: StorageInfo & {
   ajaxId: string;
-  pkColname: string;
-  lastChangedColname: string;
+  pkColname?: string;
+  lastChangedColname?: string;
   pageSize?: number;
   syncTimeoutMins?: number;
   online?: boolean;
+  mode: StorageInitMode;
 }) {
   if (
     window.hartenfeller_dev.plugins.sync_offline_data.dbStauts !==
@@ -203,6 +321,7 @@ async function initStorage({
             pkColname,
             lastChangedColname,
             online,
+            mode,
           }),
         1000,
       );
@@ -221,52 +340,75 @@ async function initStorage({
     storageVersion,
     pkColname,
     lastChangedColname,
+    online,
+    mode,
   });
 
-  const payload: InitSourceMsgData = { storageId, storageVersion };
+  switch (mode) {
+    case 'DEFAULT':
+      const isEmpty = await initStorageWithSource({
+        storageId,
+        storageVersion,
+        ajaxId,
+        pkColname,
+        lastChangedColname,
+        pageSize,
+        online,
+      });
+      if (isEmpty === true) {
+        await fetchAllRows({ ajaxId, storageId, storageVersion, pageSize });
+      } else if (syncNeeded({ storageId, storageVersion, syncTimeoutMins })) {
+        await syncRows({
+          ajaxId,
+          storageId,
+          storageVersion,
+          apex,
+          pageSize,
+          online,
+        });
+      } else {
+        apex.debug.info(
+          `Skip sync for ${storageId} v${storageVersion} as it was synced in the last ${syncTimeoutMins} minutes`,
+        );
+      }
 
-  if (online) {
-    const res = (await ajax({
-      apex,
-      ajaxId,
-      method: 'source_structure',
-    })) as any;
+      setStorageReady({ storageId, storageVersion, apex });
+      break;
 
-    if (!res?.source_structure) {
-      apex.debug.error('No source_structure in response', res);
-      return;
-    }
+    case 'LOAD_EXISTING':
+      await initStorageWithoutSource({
+        storageId,
+        storageVersion,
+        ajaxId,
+        pageSize,
+      });
 
-    const colData: Colinfo[] = res.source_structure;
+      break;
 
-    payload.colData = colData;
-    payload.pkColname = pkColname;
-    payload.lastChangedColname = lastChangedColname;
-  }
+    case 'LOAD_SYNC_EXISTING':
+      await initStorageWithoutSource({
+        storageId,
+        storageVersion,
+        ajaxId,
+        pageSize,
+      });
+      if (syncNeeded({ storageId, storageVersion, syncTimeoutMins })) {
+        await syncRows({
+          ajaxId,
+          storageId,
+          storageVersion,
+          apex,
+          pageSize,
+          online,
+        });
+      } else {
+        apex.debug.info(
+          `Skip sync for ${storageId} v${storageVersion} as it was synced in the last ${syncTimeoutMins} minutes`,
+        );
+      }
+      break;
 
-  const { data } = await sendMsgToWorker({
-    storageId,
-    storageVersion,
-    messageType: WorkerMessageType.InitSource,
-    data: payload,
-    expectedMessageType: WorkerMessageType.InitSourceResult,
-  });
-
-  const { ok, error, isEmpty } = data as InitSourceResponse;
-  apex.debug.info('%c initStorage result', YELLOW_CONSOLE, data);
-
-  if (!ok) {
-    apex.debug.error(`Could not initialize Storage: ${error}`);
-    return;
-  }
-
-  initStorageMethods({ storageId, storageVersion, apex, pageSize, ajaxId });
-
-  if (isEmpty === true) {
-    await fetchAllRows({ ajaxId, storageId, storageVersion, pageSize });
-  } else {
-    const lastSync = await getLastSync({ storageId, storageVersion });
-    if (!lastSync || lastSync < Date.now() - syncTimeoutMins * 60 * 1000) {
+    case 'FORCE_SYNC':
       await syncRows({
         ajaxId,
         storageId,
@@ -275,16 +417,38 @@ async function initStorage({
         pageSize,
         online,
       });
-    } else {
-      apex.debug.info(
-        `Skip sync for ${storageId} v${storageVersion} as it was synced in the last ${syncTimeoutMins} minutes: ${lastSync} (${new Date(
-          lastSync,
-        ).toLocaleString()})`,
-      );
-    }
-  }
 
-  setStorageReady({ storageId, storageVersion, apex });
+      break;
+
+    case 'DEPRECATED':
+      await syncRows({
+        ajaxId,
+        storageId,
+        storageVersion,
+        apex,
+        pageSize,
+        online,
+        deprecatedSync: true,
+      });
+      const res = await sendMsgToWorker({
+        storageId,
+        storageVersion,
+        messageType: WorkerMessageType.RemoveStorage,
+        expectedMessageType: WorkerMessageType.RemoveStorageResult,
+        data: {},
+      });
+
+      const data = res.data as RemoveStorageResponse;
+
+      if (!data.ok) {
+        apex.debug.error(`Could not remove storage: ${data.error}`);
+      }
+
+      break;
+
+    default:
+      throw new Error(`Unknown mode: ${mode}`);
+  }
 }
 
 function _getStorageKey({ storageId, storageVersion }: StorageInfo) {

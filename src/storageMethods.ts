@@ -4,11 +4,11 @@ import {
   GetRowByPkResponse,
   GetRowCountResponse,
   GetRowsResponse,
+  StorageInfo,
   WorkerMessageType,
 } from './globalConstants';
 import { sendMsgToWorker } from './messageBus';
 import { syncRows } from './sync';
-import { StorageInfo } from './types';
 import { DbRow, OrderByDir } from './worker/db/types';
 
 async function _getColInfo(
