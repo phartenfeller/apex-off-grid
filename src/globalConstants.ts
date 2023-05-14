@@ -45,6 +45,8 @@ export enum WorkerMessageType {
   MergeRegionDataResponse = 'merge_region_data_response',
   GetRegionData = 'get_region_data',
   GetRegionDataResponse = 'get_region_data_response',
+  DoesStorageExist = 'does_storage_exist',
+  DoesStorageExistResponse = 'does_storage_exist_response',
 }
 
 export type WorkerMessageParams = {
@@ -230,4 +232,10 @@ export type GetRegionDataMsgData = BaseRequestData & {
 export type GetRegionDataResponse = {
   data: AnyObject;
   error?: string;
+};
+
+export type DoesStorageExistMsgData = BaseRequestData;
+
+export type DoesStorageExistResponse = {
+  exists: boolean;
 };

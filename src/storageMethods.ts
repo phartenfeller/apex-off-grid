@@ -231,6 +231,8 @@ export default function initStorageMethods({
       _writeChanges({ storageId, storageVersion, rows, apex }),
     sync: () => _sync({ storageId, storageVersion, apex, pageSize, ajaxId }),
   };
+
+  setStorageReady({ storageId, storageVersion, apex });
 }
 
 export function setStorageReady({

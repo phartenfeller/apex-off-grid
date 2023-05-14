@@ -3,6 +3,8 @@ import { initSource, initTables } from './db/userTables';
 import {
   CheckSyncRowsMsgData,
   DeleteLocalChangesMsgData,
+  DoesStorageExistMsgData,
+  DoesStorageExistResponse,
   GetColInfoMsgData,
   GetLastSyncMsgData,
   GetLocalChangesMsgData,
@@ -14,6 +16,7 @@ import {
   InitSourceMsgData,
   InsertRowsMsgData,
   MergeRegionDataMsgData,
+  StorageInfo,
   SyncDoneMsgData,
   SyncServerRowsMsgData,
   WorkerMessageParams,
@@ -37,6 +40,8 @@ import {
 import { getLastSync } from './db/metaTable';
 import { getRegionData, mergeRegionData } from './db/regionStorageTable';
 import removeStorage from './db/messageProcessors/removeStorage';
+import checkTableExists from './db/util/checkTableExsists';
+import getTabname from './util/getTabname';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
   log.trace('Sending message to worker', {
@@ -295,6 +300,21 @@ function sendMsgToMain(obj: WorkerMessageParams) {
             data: res,
           };
 
+          sendMsgToMain(result);
+
+          break;
+        }
+
+        case WorkerMessageType.DoesStorageExist: {
+          const props = data.data as DoesStorageExistMsgData;
+          const tabname = getTabname(props);
+          const res = checkTableExists(tabname);
+
+          result = {
+            messageId: data.messageId,
+            messageType: WorkerMessageType.DoesStorageExistResponse,
+            data: { exists: res } as DoesStorageExistResponse,
+          };
           sendMsgToMain(result);
 
           break;

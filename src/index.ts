@@ -3,6 +3,7 @@ import { ajax } from './apex/ajax';
 import cachePage from './apex/pageCache';
 import {
   DbStatus,
+  DoesStorageExistResponse,
   GetRegionDataMsgData,
   InitDbMsgData,
   InitDbPayloadData,
@@ -372,7 +373,6 @@ async function initStorage({
         );
       }
 
-      setStorageReady({ storageId, storageVersion, apex });
       break;
 
     case 'LOAD_EXISTING':
@@ -421,6 +421,27 @@ async function initStorage({
       break;
 
     case 'DEPRECATED':
+      const existsRes = await sendMsgToWorker({
+        storageId,
+        storageVersion,
+        messageType: WorkerMessageType.DoesStorageExist,
+        expectedMessageType: WorkerMessageType.DoesStorageExistResponse,
+        data: {},
+      });
+
+      const exists = (existsRes.data as DoesStorageExistResponse).exists;
+
+      if (!exists) {
+        return;
+      }
+
+      await initStorageWithoutSource({
+        storageId,
+        storageVersion,
+        ajaxId,
+        pageSize,
+      });
+
       await syncRows({
         ajaxId,
         storageId,
