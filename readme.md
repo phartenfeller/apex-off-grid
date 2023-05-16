@@ -2,7 +2,7 @@
 
 APEX Offline for everyone thanks to a Low Code API with Plug-Ins
 
-![](./assets/apex-off-grid.png)
+![](./assets/apex-off-grid-logo.png)
 
 [Watch this tutorial video](https://youtu.be/D9aTzsYK7MQ)
 
