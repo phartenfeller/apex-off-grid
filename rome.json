@@ -6,11 +6,11 @@
       "recommended": true,
       "correctness": {
         "recommended": true,
-        "noUnusedVariables": "warn"
+        "noUnusedVariables": "warn",
+        "noSwitchDeclarations": "off"
       },
       "nursery": {
-        "recommended": true,
-        "noSwitchDeclarations": "off"
+        "recommended": true
       },
       "style": {
         "recommended": true,

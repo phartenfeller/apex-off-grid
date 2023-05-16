@@ -231,8 +231,6 @@ export default function initStorageMethods({
       _writeChanges({ storageId, storageVersion, rows, apex }),
     sync: () => _sync({ storageId, storageVersion, apex, pageSize, ajaxId }),
   };
-
-  setStorageReady({ storageId, storageVersion, apex });
 }
 
 export function setStorageReady({
@@ -241,6 +239,16 @@ export function setStorageReady({
   apex,
 }: StorageInfo & { apex: any }) {
   const storageName = `${storageId}_v${storageVersion}`;
+
+  if (
+    !window.hartenfeller_dev?.plugins?.sync_offline_data?.storages?.[
+      storageName
+    ]
+  ) {
+    const msg = `Could not set storage ${storageName} ready. Storage not found.`;
+    apex.debug.error(msg);
+    throw new Error(msg);
+  }
 
   window.hartenfeller_dev.plugins.sync_offline_data.storages[
     storageName

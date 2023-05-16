@@ -120,7 +120,7 @@ export function getRows({
 
     if (offset) {
       sql = sql.replace('#LIMIT#', `limit $limit offset $offset`);
-      binds['$offset'] = offset;
+      binds.$offset = offset;
     } else {
       sql = sql.replace('#LIMIT#', 'limit $limit');
     }
@@ -128,7 +128,7 @@ export function getRows({
     if (searchTerm) {
       const { where, bindVal } = prepareSearchTerm(searchTerm, colnames);
       sql = sql.replace('#WHERE#', where);
-      binds['$searchTerm'] = bindVal;
+      binds.$searchTerm = bindVal;
     } else {
       sql = sql.replace(
         '#WHERE#',
@@ -170,7 +170,7 @@ export function getRowCount({
       const colnames = colStrucure.cols.map((c) => c.colname);
       const { where, bindVal } = prepareSearchTerm(searchTerm, colnames);
       sql = sql.replace('#WHERE#', where);
-      binds['$searchTerm'] = bindVal;
+      binds.$searchTerm = bindVal;
     } else {
       sql = sql.replace('#WHERE#', '');
     }

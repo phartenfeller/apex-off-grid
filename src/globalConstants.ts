@@ -85,7 +85,7 @@ export type InitSourceResponse = {
 };
 
 export type InsertRowsMsgData = BaseRequestData & {
-  rows: any[];
+  rows: DbRow[];
 };
 
 export type InsertRowsResponse = {
@@ -104,7 +104,7 @@ export type CheckSyncRowsResponse = {
 };
 
 export type SyncServerRowsMsgData = BaseRequestData & {
-  rows: any[];
+  rows: DbRow[];
 };
 
 export type SyncServerRowsResponse = {

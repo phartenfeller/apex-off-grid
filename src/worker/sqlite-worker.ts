@@ -1,5 +1,3 @@
-import { initDb } from './db/initDb';
-import { initSource, initTables } from './db/userTables';
 import {
   CheckSyncRowsMsgData,
   DeleteLocalChangesMsgData,
@@ -16,17 +14,14 @@ import {
   InitSourceMsgData,
   InsertRowsMsgData,
   MergeRegionDataMsgData,
-  StorageInfo,
   SyncDoneMsgData,
   SyncServerRowsMsgData,
   WorkerMessageParams,
   WorkerMessageType,
   WriteChangesMsgData,
 } from '../globalConstants';
-import { initLogLevel, log } from './util/logger';
-import insertRows from './db/util/insertRows';
-import validateSyncRows from './db/util/validateSyncRows';
-import syncServerRows from './db/util/syncServerRows';
+import { initDb } from './db/initDb';
+import removeStorage from './db/messageProcessors/removeStorage';
 import {
   deleteLocalChanges,
   getColInfo,
@@ -39,9 +34,13 @@ import {
 } from './db/messageProcessors/storageProcessors';
 import { getLastSync } from './db/metaTable';
 import { getRegionData, mergeRegionData } from './db/regionStorageTable';
-import removeStorage from './db/messageProcessors/removeStorage';
+import { initSource, initTables } from './db/userTables';
 import checkTableExists from './db/util/checkTableExsists';
+import insertRows from './db/util/insertRows';
+import syncServerRows from './db/util/syncServerRows';
+import validateSyncRows from './db/util/validateSyncRows';
 import getTabname from './util/getTabname';
+import { initLogLevel, log } from './util/logger';
 
 function sendMsgToMain(obj: WorkerMessageParams) {
   log.trace('Sending message to worker', {

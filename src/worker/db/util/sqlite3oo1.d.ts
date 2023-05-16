@@ -43,7 +43,7 @@ declare module 'sqlite3oo1' {
     exec(optionsObject: execOptions): DB | any[];
 
     selectObject(sql: string, bind?: bind): { [key: string]: any };
-    // rome-ignore lint/nursery/noRedeclare: <explanation>
+    // rome-ignore lint/suspicious/noRedeclare: <explanation>
     selectObjects(sql: string, bind?: bind): { [key: string]: any }[];
 
     transaction(callback: () => void): void;

@@ -20,7 +20,7 @@ import {
 } from './globalConstants';
 import { initMsgBus, sendMsgToWorker } from './messageBus';
 import initStorageMethods, { setStorageReady } from './storageMethods';
-import { syncRows, getLastSync } from './sync';
+import { getLastSync, syncRows } from './sync';
 import { StorageInitMode } from './types';
 import { Colinfo } from './worker/db/types';
 
@@ -225,7 +225,13 @@ async function initStorageWithSource({
   online: boolean;
 }) {
   if (!online) {
-    initStorageWithoutSource({ storageId, storageVersion, ajaxId, pageSize });
+    await initStorageWithoutSource({
+      storageId,
+      storageVersion,
+      ajaxId,
+      pageSize,
+    });
+    return;
   }
 
   if (!pkColname || !lastChangedColname) {
@@ -372,6 +378,7 @@ async function initStorage({
           `Skip sync for ${storageId} v${storageVersion} as it was synced in the last ${syncTimeoutMins} minutes`,
         );
       }
+      setStorageReady({ storageId, storageVersion, apex });
 
       break;
 
@@ -382,6 +389,7 @@ async function initStorage({
         ajaxId,
         pageSize,
       });
+      setStorageReady({ storageId, storageVersion, apex });
 
       break;
 
@@ -406,6 +414,8 @@ async function initStorage({
           `Skip sync for ${storageId} v${storageVersion} as it was synced in the last ${syncTimeoutMins} minutes`,
         );
       }
+      setStorageReady({ storageId, storageVersion, apex });
+
       break;
 
     case 'FORCE_SYNC':

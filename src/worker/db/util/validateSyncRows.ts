@@ -19,11 +19,11 @@ export default function validateSyncRows({
 
     let pkList: string;
     if (pkColType === 'real') {
-      const pkArr: number[] = rows.map((row) => row[structure.pkCol]);
+      const pkArr: number[] = rows.map((row) => row[structure.pkCol] as number);
       addServerIds({ syncId, numIds: pkArr });
       pkList = pkArr.join(', ');
     } else {
-      const pkArr: string[] = rows.map((row) => row[structure.pkCol]);
+      const pkArr: string[] = rows.map((row) => row[structure.pkCol] as string);
       addServerIds({ syncId, strIds: pkArr });
       pkList = pkArr.map((v) => `'${v}'`).join(', ');
     }
