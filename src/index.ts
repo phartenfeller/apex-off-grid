@@ -364,7 +364,9 @@ async function initStorage({
       });
       if (isEmpty === true) {
         await fetchAllRows({ ajaxId, storageId, storageVersion, pageSize });
-      } else if (syncNeeded({ storageId, storageVersion, syncTimeoutMins })) {
+      } else if (
+        await syncNeeded({ storageId, storageVersion, syncTimeoutMins })
+      ) {
         await syncRows({
           ajaxId,
           storageId,
@@ -400,7 +402,7 @@ async function initStorage({
         ajaxId,
         pageSize,
       });
-      if (syncNeeded({ storageId, storageVersion, syncTimeoutMins })) {
+      if (await syncNeeded({ storageId, storageVersion, syncTimeoutMins })) {
         await syncRows({
           ajaxId,
           storageId,
