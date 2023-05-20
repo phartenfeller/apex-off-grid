@@ -73,7 +73,7 @@ end case;
 - You can't just make your existing APEX app offline capable with this
 - The users can download the Database and get control over all offline available data
 - The users can manipulate the data in the local database
-- Does not work with current Safari version (but in previous and next...)
+- Does not work with current Safari version (16.4, 16.5) (but in previous and hopefully next...) [info about issue](https://sqlite.org/forum/forumpost/4b16f2f465a2433b330d743cf1a3a02b104ed0efff2f368c3d9aa463ec49c97c)
 
 ## Resources
 
