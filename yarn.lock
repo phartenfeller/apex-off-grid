@@ -73,35 +73,35 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@rometools/cli-darwin-arm64@12.1.0":
-  version "12.1.0"
-  resolved "https://registry.yarnpkg.com/@rometools/cli-darwin-arm64/-/cli-darwin-arm64-12.1.0.tgz#3a52e43ab2379b79b8565afced391b009b3b7531"
-  integrity sha512-U9trIXqE+WVsPUQRE8vooh97jNcyC1cvhNO91Q31FfWgccfbiJbfiQzPewpQ1+UseyJIdpWFAYLs8VFykhAl3g==
+"@rometools/cli-darwin-arm64@12.1.2":
+  version "12.1.2"
+  resolved "https://registry.yarnpkg.com/@rometools/cli-darwin-arm64/-/cli-darwin-arm64-12.1.2.tgz#e08b29f6fbfc84dce00bb3c3c9e26ab25b1bc1d0"
+  integrity sha512-9QxtAwNyX9n7ysxo+9qWczl70I1opulmX7LFNsRJKS9qqyTNc5K++btnNK07vWAIeQsMx4QYwr7241thuBMlFw==
 
-"@rometools/cli-darwin-x64@12.1.0":
-  version "12.1.0"
-  resolved "https://registry.yarnpkg.com/@rometools/cli-darwin-x64/-/cli-darwin-x64-12.1.0.tgz#424f0bf209fb45d0417f4e7547dbb1bd9dcd157a"
-  integrity sha512-ePyRJwprT+POsGue1gdqPYOHojXfDz/OJI18renU0NI2CHeeeMhnquu+MZJaiBGyBd1ezIgWZWiQ4DhLFOaCUg==
+"@rometools/cli-darwin-x64@12.1.2":
+  version "12.1.2"
+  resolved "https://registry.yarnpkg.com/@rometools/cli-darwin-x64/-/cli-darwin-x64-12.1.2.tgz#900e5a12a754f5872b99abd6baae7b184ab0526f"
+  integrity sha512-w28NkGYK/rSmQU2WkNzw1h7ec8IR5a7LzYwPHDvG2ogY5sTcygkg0TGKOF/MHUvixU6EBPrFobua2gPhpr/m5A==
 
-"@rometools/cli-linux-arm64@12.1.0":
-  version "12.1.0"
-  resolved "https://registry.yarnpkg.com/@rometools/cli-linux-arm64/-/cli-linux-arm64-12.1.0.tgz#13cf086641b42297ed48ca8978c9c8e10fa703b6"
-  integrity sha512-j/pF6pF+lKihw7CIvwQZqQG9gpaUy2FyO9+nu5dvCChblXNEaA2zMnpLnDlCue0B7xY0jZkk1EZdF49ztEZZFA==
+"@rometools/cli-linux-arm64@12.1.2":
+  version "12.1.2"
+  resolved "https://registry.yarnpkg.com/@rometools/cli-linux-arm64/-/cli-linux-arm64-12.1.2.tgz#3d81d8b1f6e87d04a99a0d54ccf14a3ecf69053c"
+  integrity sha512-7BPGqPtnJy1O8B/ucJ5Vg+p6EUvJJ9DazrT1UEdVR/4inPqAVac9PIZDjjHXyMrt/3IngnetPyn5EXNTAqpJVw==
 
-"@rometools/cli-linux-x64@12.1.0":
-  version "12.1.0"
-  resolved "https://registry.yarnpkg.com/@rometools/cli-linux-x64/-/cli-linux-x64-12.1.0.tgz#9271c9e955b84ac51608c0ad14b374ad2cc629eb"
-  integrity sha512-zh6tW0JumP/rQkFDdsg6FEDBv0ZPvPLFirfHqzJA8VDNRBHkOTq27oVCbTJIGyUCGm9VvIzG8sJFVKkYpxkl2g==
+"@rometools/cli-linux-x64@12.1.2":
+  version "12.1.2"
+  resolved "https://registry.yarnpkg.com/@rometools/cli-linux-x64/-/cli-linux-x64-12.1.2.tgz#166d49f12872942b8ead7d484a29745e99d3efea"
+  integrity sha512-qH2iJKPLp34D0GFK1gLolHGkTA8q2vGKh2Ae1AwoTh87g0mXyyeQf4mAtxJtf4/ydMgjEkAZdEwyaevbTX8gnQ==
 
-"@rometools/cli-win32-arm64@12.1.0":
-  version "12.1.0"
-  resolved "https://registry.yarnpkg.com/@rometools/cli-win32-arm64/-/cli-win32-arm64-12.1.0.tgz#43c6c575d4b8614338f006f1c04116be77651672"
-  integrity sha512-ggug6gUWFnO2QK0KC5XsYRhuZ22jeLksebdHMnkaHzZBtxXnKMC7yXnYwU/Lg2fGAwmMsluIbaqFYgen4+c8RA==
+"@rometools/cli-win32-arm64@12.1.2":
+  version "12.1.2"
+  resolved "https://registry.yarnpkg.com/@rometools/cli-win32-arm64/-/cli-win32-arm64-12.1.2.tgz#09ecdde94a38b1e133b2e8c1393d6a891323dfc7"
+  integrity sha512-iIdqss2R8bni7C7isA9OLBj1UAA3MeKfca0aHNZr+2gSRdiSxO/47j6s3Tpebso99xsJBAFdWBOruG+l/C+LQg==
 
-"@rometools/cli-win32-x64@12.1.0":
-  version "12.1.0"
-  resolved "https://registry.yarnpkg.com/@rometools/cli-win32-x64/-/cli-win32-x64-12.1.0.tgz#703783a238a867713555c74bfb8f4b2cfcd47185"
-  integrity sha512-TnurdnlzBwcvRSsgmNz9Gorffnjr5cS8TdHo9w+3pT4GdSsrLZqvd1IV2tj4uRKkNn6OJtSqW3tZ5SiTrf0LuA==
+"@rometools/cli-win32-x64@12.1.2":
+  version "12.1.2"
+  resolved "https://registry.yarnpkg.com/@rometools/cli-win32-x64/-/cli-win32-x64-12.1.2.tgz#cd8d547da3c446caeb099423375d71ed1bcf213a"
+  integrity sha512-MKOd02sSnd/Biogh3rIKpLFZzYbDSVvRNAxbFHJOpyGLbeQHfAg7QxjKwz0PqyrHVjZaTEEPlswrf4IFii0GNg==
 
 "@types/body-parser@*":
   version "1.19.2"
@@ -403,10 +403,10 @@ accepts@~1.3.4, accepts@~1.3.5, accepts@~1.3.8:
     mime-types "~2.1.34"
     negotiator "0.6.3"
 
-acorn-import-assertions@^1.7.6:
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/acorn-import-assertions/-/acorn-import-assertions-1.8.0.tgz#ba2b5939ce62c238db6d93d81c9b111b29b855e9"
-  integrity sha512-m7VZ3jwz4eK6A4Vtt8Ew1/mNbP24u0FhdyfA7fSvnJR6LMdfOYnmuIrrJAgrYfYJ10F/otaHTtrtrtmHdMNzEw==
+acorn-import-assertions@^1.9.0:
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/acorn-import-assertions/-/acorn-import-assertions-1.9.0.tgz#507276249d684797c84e0734ef84860334cfb1ac"
+  integrity sha512-cmMwop9x+8KFhxvKrKfPYmN6/pKTYYHBqLa0DfvVZcKMJWNyWLnaqND7dx/qn66R7ewM1UX5XMaDVP5wlVTaVA==
 
 acorn@^8.5.0, acorn@^8.7.1:
   version "8.8.1"
@@ -899,10 +899,10 @@ enhanced-resolve@^5.0.0:
     graceful-fs "^4.2.4"
     tapable "^2.2.0"
 
-enhanced-resolve@^5.14.0:
-  version "5.14.0"
-  resolved "https://registry.yarnpkg.com/enhanced-resolve/-/enhanced-resolve-5.14.0.tgz#0b6c676c8a3266c99fa281e4433a706f5c0c61c4"
-  integrity sha512-+DCows0XNwLDcUhbFJPdlQEVnT2zXlCv7hPxemTz86/O+B/hCQ+mb7ydkPKiflpVraqLPCAfu7lDy+hBXueojw==
+enhanced-resolve@^5.14.1:
+  version "5.14.1"
+  resolved "https://registry.yarnpkg.com/enhanced-resolve/-/enhanced-resolve-5.14.1.tgz#de684b6803724477a4af5d74ccae5de52c25f6b3"
+  integrity sha512-Vklwq2vDKtl0y/vtwjSesgJ5MYS7Etuk5txS8VdKL4AOS1aUlD96zqIfsOSLQsdv3xgMRbtkWM8eG9XDfKUPow==
   dependencies:
     graceful-fs "^4.2.4"
     tapable "^2.2.0"
@@ -1960,17 +1960,17 @@ rimraf@^3.0.2:
   dependencies:
     glob "^7.1.3"
 
-rome@^12.1.0:
-  version "12.1.0"
-  resolved "https://registry.yarnpkg.com/rome/-/rome-12.1.0.tgz#be218acf21d86b5368205ce6917c1c2b62f9698c"
-  integrity sha512-inIBYc2/Das6LDXcw8IQp7yeXth6Rhmj9y8sS/Y/0g5/29Lyzr785SjCmKyiN2No4MNsaP3YJNm2QZAs2UpR2w==
+rome@^12.1.2:
+  version "12.1.2"
+  resolved "https://registry.yarnpkg.com/rome/-/rome-12.1.2.tgz#15d35b5a5abfce698b595913b71f26ef47a2a0c1"
+  integrity sha512-ObyDevKRU6k3R9fAK9hDvrX9FSPEJ0JWNv5i65enknV+epWjEIL0jnDuijPUX7MSVS6M/ngTiKUaeF3w63SJXw==
   optionalDependencies:
-    "@rometools/cli-darwin-arm64" "12.1.0"
-    "@rometools/cli-darwin-x64" "12.1.0"
-    "@rometools/cli-linux-arm64" "12.1.0"
-    "@rometools/cli-linux-x64" "12.1.0"
-    "@rometools/cli-win32-arm64" "12.1.0"
-    "@rometools/cli-win32-x64" "12.1.0"
+    "@rometools/cli-darwin-arm64" "12.1.2"
+    "@rometools/cli-darwin-x64" "12.1.2"
+    "@rometools/cli-linux-arm64" "12.1.2"
+    "@rometools/cli-linux-x64" "12.1.2"
+    "@rometools/cli-win32-arm64" "12.1.2"
+    "@rometools/cli-win32-x64" "12.1.2"
 
 run-parallel@^1.1.9:
   version "1.2.0"
@@ -2266,10 +2266,10 @@ terser-webpack-plugin@^5.3.7:
     serialize-javascript "^6.0.1"
     terser "^5.16.5"
 
-terser-webpack-plugin@^5.3.8:
-  version "5.3.8"
-  resolved "https://registry.yarnpkg.com/terser-webpack-plugin/-/terser-webpack-plugin-5.3.8.tgz#415e03d2508f7de63d59eca85c5d102838f06610"
-  integrity sha512-WiHL3ElchZMsK27P8uIUh4604IgJyAW47LVXGbEoB21DbQcZ+OuMpGjVYnEUaqcWM6dO8uS2qUbA7LSCWqvsbg==
+terser-webpack-plugin@^5.3.9:
+  version "5.3.9"
+  resolved "https://registry.yarnpkg.com/terser-webpack-plugin/-/terser-webpack-plugin-5.3.9.tgz#832536999c51b46d468067f9e37662a3b96adfe1"
+  integrity sha512-ZuXsqE07EcggTWQjXUj+Aot/OMcD0bMKGgF63f7UxYcu5/AJF53aIpK1YoP5xR9l6s/Hy2b+t1AM0bLNPRuhwA==
   dependencies:
     "@jridgewell/trace-mapping" "^0.3.17"
     jest-worker "^27.4.5"
@@ -2324,10 +2324,10 @@ toidentifier@1.0.1:
   resolved "https://registry.yarnpkg.com/toidentifier/-/toidentifier-1.0.1.tgz#3be34321a88a820ed1bd80dfaa33e479fbb8dd35"
   integrity sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==
 
-ts-loader@^9.4.2:
-  version "9.4.2"
-  resolved "https://registry.yarnpkg.com/ts-loader/-/ts-loader-9.4.2.tgz#80a45eee92dd5170b900b3d00abcfa14949aeb78"
-  integrity sha512-OmlC4WVmFv5I0PpaxYb+qGeGOdm5giHU7HwDDUjw59emP2UYMHy9fFSDcYgSNoH8sXcj4hGCSEhlDZ9ULeDraA==
+ts-loader@^9.4.3:
+  version "9.4.3"
+  resolved "https://registry.yarnpkg.com/ts-loader/-/ts-loader-9.4.3.tgz#55cfa7c28dd82a2de968ae45c3adb75fb888b27e"
+  integrity sha512-n3hBnm6ozJYzwiwt5YRiJZkzktftRpMiBApHaJPoWLA+qetQBAXkHqCLM6nwSdRDimqVtA5ocIkcTRLMTt7yzA==
   dependencies:
     chalk "^4.1.0"
     enhanced-resolve "^5.0.0"
@@ -2491,10 +2491,10 @@ webpack-sources@^3.2.3:
   resolved "https://registry.yarnpkg.com/webpack-sources/-/webpack-sources-3.2.3.tgz#2d4daab8451fd4b240cc27055ff6a0c2ccea0cde"
   integrity sha512-/DyMEOrDgLKKIG0fmvtz+4dUX/3Ghozwgm6iPp8KRhvn+eQf9+Q7GWxVNMk3+uCPWfdXYC4ExGBckIXdFEfH1w==
 
-webpack@^5.82.1:
-  version "5.82.1"
-  resolved "https://registry.yarnpkg.com/webpack/-/webpack-5.82.1.tgz#8f38c78e53467556e8a89054ebd3ef6e9f67dbab"
-  integrity sha512-C6uiGQJ+Gt4RyHXXYt+v9f+SN1v83x68URwgxNQ98cvH8kxiuywWGP4XeNZ1paOzZ63aY3cTciCEQJNFUljlLw==
+webpack@^5.84.1:
+  version "5.84.1"
+  resolved "https://registry.yarnpkg.com/webpack/-/webpack-5.84.1.tgz#d4493acdeca46b26ffc99d86d784cabfeb925a15"
+  integrity sha512-ZP4qaZ7vVn/K8WN/p990SGATmrL1qg4heP/MrVneczYtpDGJWlrgZv55vxaV2ul885Kz+25MP2kSXkPe3LZfmg==
   dependencies:
     "@types/eslint-scope" "^3.7.3"
     "@types/estree" "^1.0.0"
@@ -2502,10 +2502,10 @@ webpack@^5.82.1:
     "@webassemblyjs/wasm-edit" "^1.11.5"
     "@webassemblyjs/wasm-parser" "^1.11.5"
     acorn "^8.7.1"
-    acorn-import-assertions "^1.7.6"
+    acorn-import-assertions "^1.9.0"
     browserslist "^4.14.5"
     chrome-trace-event "^1.0.2"
-    enhanced-resolve "^5.14.0"
+    enhanced-resolve "^5.14.1"
     es-module-lexer "^1.2.1"
     eslint-scope "5.1.1"
     events "^3.2.0"

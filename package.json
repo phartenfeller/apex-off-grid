@@ -11,18 +11,20 @@
   },
   "devDependencies": {
     "copy-webpack-plugin": "^11.0.0",
-    "rome": "^12.1.0",
-    "terser-webpack-plugin": "^5.3.8",
-    "ts-loader": "^9.4.2",
+    "rome": "^12.1.2",
+    "terser-webpack-plugin": "^5.3.9",
+    "ts-loader": "^9.4.3",
     "typescript": "5.0.4"
   },
   "dependencies": {
     "html-webpack-plugin": "^5.5.1",
-    "webpack": "^5.82.1",
+    "webpack": "^5.84.1",
     "webpack-cli": "^5.1.1",
     "webpack-dev-server": "^4.15.0"
   },
   "browserslist": [
-    "last 1 chrome version", "last 1 firefox version", "last 1 safari version"
+    "last 1 chrome version",
+    "last 1 firefox version",
+    "last 1 safari version"
   ]
 }
