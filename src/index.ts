@@ -23,6 +23,7 @@ import initStorageMethods, { setStorageReady } from './storageMethods';
 import { getLastSync, syncRows } from './sync';
 import { StorageInitMode } from './types';
 import { Colinfo } from './worker/db/types';
+import worker from './worker/sqlite-worker.ts?worker&inline';
 
 declare global {
   interface Window {
@@ -35,12 +36,15 @@ let gFilePrefix = '';
 
 const apex = window.apex;
 
+/*
 const worker = new Worker(
-  /* webpackChunkName: "sqlite-worker" */ new URL(
+  /* webpackChunkName: "sqlite-worker"  * / new URL(
     './worker/sqlite-worker.ts',
     import.meta.url,
   ),
+  { type: 'module' },
 );
+*/
 
 let initDbRetries = 0;
 

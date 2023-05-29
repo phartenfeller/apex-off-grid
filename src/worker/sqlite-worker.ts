@@ -65,7 +65,14 @@ function sendMsgToMain(obj: WorkerMessageParams) {
           const fullUrl = `${urlPrefix}/${messageData.filePrefix}sqlite3.js`;
 
           log.info('script src:', fullUrl);
-          importScripts(fullUrl);
+          // importScripts(fullUrl);
+
+          // /* webpackChunkName: "sqlite3.js" */ importScripts(
+          //   new URL(
+          //     './db/jswasm/sqlite3-bundler-friendly.mjs',
+          //     import.meta.url,
+          //   ).toString(),
+          // );
 
           const res = await initDb();
           log.trace('initDb result in Worker', { res });

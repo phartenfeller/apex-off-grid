@@ -1,17 +1,11 @@
 import { DB } from 'sqlite3oo1';
 import { InitDbMsgData } from '../../globalConstants';
 import { log } from '../util/logger';
+import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 
 const DB_NAME = 'file:///hartenfeller_dev_apex_offline_data.sqlite';
 
 export let db: DB;
-
-declare global {
-  function sqlite3InitModule(options: {
-    print: object;
-    printErr: object;
-  }): Promise<void>;
-}
 
 function optimizeDb() {
   log.trace('Start optimizing database');
@@ -30,18 +24,17 @@ export async function initDb(): Promise<InitDbMsgData> {
   log.trace('Start initializing database in worker', self);
   return new Promise((resolve) => {
     try {
-      self
-        .sqlite3InitModule(
-          {
-            print: logX,
-            printErr: errorX,
-          },
-          // {
-          //   print: console.log,
-          //   printErr: console.error,
-          // },
-          // { print: log.info, printErr: log.error }
-        )
+      sqlite3InitModule(
+        {
+          print: logX,
+          printErr: errorX,
+        },
+        // {
+        //   print: console.log,
+        //   printErr: console.error,
+        // },
+        // { print: log.info, printErr: log.error }
+      )
         .then((sqlite3: any) => {
           try {
             log.info('Initialized sqlite3 module.', sqlite3);

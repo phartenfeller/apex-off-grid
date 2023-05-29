@@ -35,7 +35,7 @@ export default {
 
   plugins: [
     new CopyPlugin({
-      patterns: [{ from: 'src/worker/db/jswasm' }],
+      patterns: [{ from: 'src/worker/db/jswasm/sqlite3.wasm' }],
     }),
   ],
   optimization: {
