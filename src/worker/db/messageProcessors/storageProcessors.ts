@@ -34,9 +34,11 @@ function prepareFitlerTerm(colname: string, filter: string) {
 }
 
 function prepareSearchTerm(searchTerm: string, colnames: string[]) {
-  const coalescedCols = colnames.map((c) => `coalesce(${c}, '')`).join(' || ');
+  const coalescedCols = colnames
+    .map((c) => `coalesce("${c}", '')`)
+    .join(' || ');
   return {
-    where: `(lower("${coalescedCols}") LIKE $searchTerm)`,
+    where: `(lower(${coalescedCols}) LIKE $searchTerm)`,
     bindVal: `%${searchTerm.replaceAll('%', '/%').toLowerCase()}%`,
   };
 }
