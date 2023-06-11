@@ -28,7 +28,7 @@ function prepareFitlerTerm(colname: string, filter: string) {
 
   return {
     bindName,
-    where: `where (lower(${colname}) LIKE ${bindName})`,
+    where: `where (lower("${colname}") LIKE ${bindName})`,
     bindVal: `%${filter.replaceAll('%', '/%').toLowerCase()}%`,
   };
 }
@@ -36,7 +36,7 @@ function prepareFitlerTerm(colname: string, filter: string) {
 function prepareSearchTerm(searchTerm: string, colnames: string[]) {
   const coalescedCols = colnames.map((c) => `coalesce(${c}, '')`).join(' || ');
   return {
-    where: `(lower(${coalescedCols}) LIKE $searchTerm)`,
+    where: `(lower("${coalescedCols}") LIKE $searchTerm)`,
     bindVal: `%${searchTerm.replaceAll('%', '/%').toLowerCase()}%`,
   };
 }
@@ -121,7 +121,7 @@ function buildQuery({
       } else {
         const dir = orderByDir.toLowerCase() === 'desc' ? 'desc' : 'asc';
 
-        sql = sql.replace('#ORDER_BY#', `order by ${orderByCol} ${dir}`);
+        sql = sql.replace('#ORDER_BY#', `order by "${orderByCol}" ${dir}`);
       }
     } else {
       sql = sql.replace('#ORDER_BY#', 'order by 1');
