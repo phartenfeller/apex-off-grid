@@ -3,13 +3,15 @@ import {
   GetColInfoResponse,
   GetRowByPkResponse,
   GetRowCountResponse,
+  GetRowsArgs,
   GetRowsResponse,
+  RowFilterArgs,
   StorageInfo,
   WorkerMessageType,
 } from './globalConstants';
 import { sendMsgToWorker } from './messageBus';
 import { syncRows } from './sync';
-import { DbRow, OrderByDir } from './worker/db/types';
+import { DbRow } from './worker/db/types';
 
 async function _getColInfo(
   storageId: string,
@@ -72,19 +74,24 @@ async function _getRows({
   orderByCol,
   orderByDir,
   searchTerm,
+  colFilters,
+  getRowCount,
 }: StorageInfo & {
   apex: any;
-  offset: number;
-  maxRows: number;
-  orderByCol?: string;
-  orderByDir?: OrderByDir;
-  searchTerm?: string;
-}) {
+} & GetRowsArgs) {
   const { data } = await sendMsgToWorker({
     storageId,
     storageVersion,
     messageType: WorkerMessageType.GetRows,
-    data: { offset, maxRows, orderByCol, orderByDir, searchTerm },
+    data: {
+      offset,
+      maxRows,
+      orderByCol,
+      orderByDir,
+      searchTerm,
+      colFilters,
+      getRowCount,
+    },
     expectedMessageType: WorkerMessageType.GetRowsResponse,
   });
 
@@ -103,15 +110,15 @@ async function _getRowCount({
   storageVersion,
   apex,
   searchTerm,
+  colFilters,
 }: StorageInfo & {
   apex: any;
-  searchTerm?: string;
-}) {
+} & RowFilterArgs) {
   const { data } = await sendMsgToWorker({
     storageId,
     storageVersion,
     messageType: WorkerMessageType.GetRowCount,
-    data: { searchTerm },
+    data: { searchTerm, colFilters },
     expectedMessageType: WorkerMessageType.GetRowCountResponse,
   });
 
@@ -208,13 +215,9 @@ export default function initStorageMethods({
       orderByCol,
       orderByDir,
       searchTerm,
-    }: {
-      offset: number;
-      maxRows?: number;
-      orderByCol?: string;
-      orderByDir?: OrderByDir;
-      searchTerm?: string;
-    }) =>
+      colFilters,
+      getRowCount,
+    }: GetRowsArgs) =>
       _getRows({
         storageId,
         storageVersion,
@@ -224,9 +227,11 @@ export default function initStorageMethods({
         orderByCol,
         orderByDir,
         searchTerm,
+        colFilters,
+        getRowCount,
       }),
-    getRowCount: ({ searchTerm }: { searchTerm: string }) =>
-      _getRowCount({ storageId, storageVersion, apex, searchTerm }),
+    getRowCount: ({ searchTerm, colFilters }: RowFilterArgs) =>
+      _getRowCount({ storageId, storageVersion, apex, searchTerm, colFilters }),
     writeChanges: (rows: DbRow[]) =>
       _writeChanges({ storageId, storageVersion, rows, apex }),
     sync: () => _sync({ storageId, storageVersion, apex, pageSize, ajaxId }),
