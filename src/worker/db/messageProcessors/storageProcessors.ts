@@ -204,7 +204,7 @@ export function getRows(args: GetRowsMsgData): GetRowsResponse {
     let rowCount: number | undefined;
 
     if (args.getRowCount) {
-      if (data.length <= args.maxRows) {
+      if (data.length < args.maxRows) {
         rowCount = data.length;
       } else {
         rowCount = fetchRowCount(sql, binds);
