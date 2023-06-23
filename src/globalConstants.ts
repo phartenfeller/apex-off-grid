@@ -152,7 +152,10 @@ export type GetRowsArgs = {
   getRowCount?: boolean;
 } & RowFilterArgs;
 
-export type GetRowsMsgData = BaseRequestData & GetRowsArgs;
+export type GetRowsMsgData = BaseRequestData &
+  GetRowsArgs & {
+    colStructure?: ColStructure;
+  };
 
 export type GetRowsResponse = {
   ok: boolean;

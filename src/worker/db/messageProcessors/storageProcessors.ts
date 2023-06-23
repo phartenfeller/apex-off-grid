@@ -28,7 +28,7 @@ function prepareFitlerTerm(colname: string, filter: string) {
 
   return {
     bindName,
-    where: `where (lower("${colname}") LIKE ${bindName})`,
+    where: `(lower("${colname}") LIKE ${bindName})`,
     bindVal: `%${filter.replaceAll('%', '/%').toLowerCase()}%`,
   };
 }
@@ -98,7 +98,7 @@ export function getRowByPk(
 
 type Binds = { [key: string]: number | string } | undefined;
 
-function buildQuery({
+export function buildQuery({
   storageId,
   storageVersion,
   offset,
@@ -107,11 +107,15 @@ function buildQuery({
   orderByDir,
   searchTerm,
   colFilters,
+  colStructure,
 }: GetRowsMsgData): { sql: string; binds: Binds } {
   const tabname = getTabname({ storageId, storageVersion });
   try {
     let sql = `select * from ${tabname} #WHERE# #ORDER_BY# #LIMIT#`;
-    const colStructure = getStorageColumns(storageId, storageVersion);
+    if (!colStructure) {
+      colStructure = getStorageColumns(storageId, storageVersion);
+    }
+
     const colnames = colStructure.cols.map((c) => c.colname);
 
     if (orderByCol) {

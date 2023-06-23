@@ -1,4 +1,4 @@
-create or replace package body plugin_hartenfeller_offline_first_pkg as 
+create or replace package body plugin_apex_off_grid_pkg as 
 
   type t_sqlite_col_info is record (
     colname         varchar2(100)
@@ -8,6 +8,17 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
   );
 
   type tt_sqlite_col_info is table of t_sqlite_col_info index by pls_integer;
+
+ type t_table_region_col_info is record (
+    name                  APEX_APPLICATION_PAGE_REG_COLS.name%type
+  , data_type             APEX_APPLICATION_PAGE_REG_COLS.data_type%type
+  , is_visible            number(1,0)
+  , heading               APEX_APPLICATION_PAGE_REG_COLS.heading%type
+  , sortable              number(1,0)
+  , filterable            number(1,0)
+  );
+
+  type tt_table_region_col_info is table of t_table_region_col_info;
 
 
  function render_da( 
@@ -501,6 +512,246 @@ create or replace package body plugin_hartenfeller_offline_first_pkg as
       return l_return;
   end render_ag_grid_offline_da;
 
+  function render_form_utils_da ( 
+    p_dynamic_action apex_plugin.t_dynamic_action
+  , p_plugin         apex_plugin.t_plugin
+  )
+    return apex_plugin.t_dynamic_action_render_result
+  as
+    l_return apex_plugin.t_dynamic_action_render_result;
 
-end plugin_hartenfeller_offline_first_pkg;
+    l_action               p_dynamic_action.attribute_01%type := p_dynamic_action.attribute_01;
+    l_storage_id           p_dynamic_action.attribute_02%type := p_dynamic_action.attribute_02;
+    l_storage_version      p_dynamic_action.attribute_03%type := p_dynamic_action.attribute_03;
+    l_pk_item              p_dynamic_action.attribute_04%type := p_dynamic_action.attribute_04;
+  begin
+    if apex_application.g_debug then
+        apex_plugin_util.debug_dynamic_action
+          ( p_plugin         => p_plugin
+          , p_dynamic_action => p_dynamic_action
+          );
+    end if;
+
+    l_return.javascript_function := 'function() { ' ||
+                                  'window.hartenfeller_dev.plugins.offline_form_utils.run({'|| 
+                                  apex_javascript.add_attribute( p_name => 'action', p_value => l_action ) ||
+                                  apex_javascript.add_attribute( p_name => 'storageId', p_value => l_storage_id ) ||
+                                  apex_javascript.add_attribute( p_name => 'storageVersion', p_value => l_storage_version ) ||
+                                  apex_javascript.add_attribute( p_name => 'pkPageItem', p_value => l_pk_item ) ||
+                                  apex_javascript.add_attribute( p_name => 'regionId', p_value => p_plugin.attribute_01 ) ||
+                                  '})  }';
+
+    return l_return;
+  end render_form_utils_da;
+
+  function render_data_list_region ( 
+    p_region              in apex_plugin.t_region
+  , p_plugin              in apex_plugin.t_plugin
+  , p_is_printer_friendly in boolean
+  )
+    return apex_plugin.t_region_render_result
+  as
+    l_result        apex_plugin.t_region_render_result;
+    l_region_id     p_region.static_id%type    := p_region.static_id;
+
+    --perform escaping
+    l_region_id_esc p_region.static_id%type    := apex_escape.html_attribute(l_region_id);
+  begin
+
+    --debug
+    if apex_application.g_debug 
+    then
+        apex_plugin_util.debug_region
+          ( p_plugin => p_plugin
+          , p_region => p_region
+          );
+    end if;
+
+    --write html to buffer via sys.htp.p
+    sys.htp.p('<div id="'|| l_region_id_esc ||'_wrapper"></div>');
+
+    apex_javascript.add_onload_code (
+      p_code => 'window.hartenfeller_dev.plugins.offline_data_list.initAPEXRegion({' ||
+                apex_javascript.add_attribute(
+                  p_name      => 'regionId'
+                , p_value     => l_region_id_esc
+                ) 
+                ||
+                apex_javascript.add_attribute(
+                  p_name      => 'pageSize'
+                , p_value     => to_number(p_region.attribute_04)
+                )
+                ||
+                -- it is a fc so can't use add_attribute
+                ' headerFc: ' || p_region.attribute_03 || ' , '
+                ||
+                apex_javascript.add_attribute(
+                  p_name      => 'storageId'
+                , p_value     => p_region.attribute_01
+                )
+                ||
+                apex_javascript.add_attribute(
+                  p_name      => 'storageVersion'
+                , p_value     => to_number(p_region.attribute_02)
+                )
+                ||
+                apex_javascript.add_attribute(
+                  p_name      => 'valuePageItem'
+                , p_value     => p_region.attribute_05
+                )
+                ||
+                '});'
+    );
+    
+    return l_result;
+  end render_data_list_region;
+
+
+  function get_table_region_col_info (
+    p_region_id in varchar2
+  )
+    return tt_table_region_col_info
+  as
+    l_has_default_id     boolean;
+    l_col_info_tab       tt_table_region_col_info;
+  begin
+    l_has_default_id := regexp_substr(p_region_id, 'R[0-9]+$') = p_region_id;
+
+    if l_has_default_id then
+      select c.name
+          , c.data_type
+          , case when c.is_visible = 'Yes' then 1 else 0 end as is_visible
+          , c.heading
+          , case when c.attribute_01 = 'Y' then 1 else 0 end as sortable
+          , case when c.attribute_01 = 'Y' then 1 else 0 end as filterable
+        bulk collect into l_col_info_tab
+        from APEX_APPLICATION_PAGE_REGIONS r 
+        join APEX_APPLICATION_PAGE_REG_COLS c
+          on r.region_id = c.region_id
+      where r.application_id = v('APP_ID')
+        and r.page_id = v('APP_PAGE_ID')
+        and r.region_id = to_number(replace(p_region_id, 'R', ''))
+      order by c.display_sequence
+      ;
+    else 
+      select c.name
+          , c.data_type
+          , case when c.is_visible = 'Yes' then 1 else 0 end as is_visible
+          , c.heading
+          , case when c.attribute_01 = 'Y' then 1 else 0 end as sortable
+          , case when c.attribute_01 = 'Y' then 1 else 0 end as filterable
+        bulk collect into l_col_info_tab
+        from APEX_APPLICATION_PAGE_REGIONS r 
+        join APEX_APPLICATION_PAGE_REG_COLS c
+          on r.region_id = c.region_id
+      where r.application_id = v('APP_ID')
+        and r.page_id = v('APP_PAGE_ID')
+        and r.static_id = p_region_id
+      order by c.display_sequence
+      ;
+    end if;
+
+    return l_col_info_tab;
+  end get_table_region_col_info;
+
+
+  function render_table_region ( 
+    p_region              in apex_plugin.t_region
+  , p_plugin              in apex_plugin.t_plugin
+  , p_is_printer_friendly in boolean
+  )
+    return apex_plugin.t_region_render_result
+  as
+    l_result        apex_plugin.t_region_render_result;
+    l_region_id     p_region.static_id%type    := p_region.static_id;
+
+    --perform escaping
+    l_region_id_esc p_region.static_id%type    := apex_escape.html_attribute(l_region_id);
+
+    l_col_info_tab   tt_table_region_col_info;
+    l_col_config_arr apex_t_varchar2;
+    l_col_config_str varchar2(4000);
+  begin
+
+    --debug
+    if apex_application.g_debug 
+    then
+        apex_plugin_util.debug_region
+          ( p_plugin => p_plugin
+          , p_region => p_region
+          );
+    end if;
+
+    --write html to buffer via sys.htp.p
+    sys.htp.p('<div id="'|| l_region_id_esc ||'_wrapper"></div>');
+
+    l_col_info_tab := get_table_region_col_info(p_region.static_id);
+
+    for i in 1 .. l_col_info_tab.count
+    loop
+      l_col_config_str := '{' ||
+                          apex_javascript.add_attribute(
+                            p_name      => 'name'
+                          , p_value     => l_col_info_tab(i).name
+                          )
+                          ||
+                          apex_javascript.add_attribute(
+                            p_name      => 'heading'
+                          , p_value     => l_col_info_tab(i).heading
+                          )
+                          ||
+                          apex_javascript.add_attribute(
+                            p_name      => 'dataType'
+                          , p_value     => l_col_info_tab(i).data_type
+                          )
+                          ||
+                          apex_javascript.add_attribute(
+                            p_name      => 'isSortable'
+                          , p_value     => l_col_info_tab(i).sortable = 1
+                          )
+                          ||
+                          apex_javascript.add_attribute(
+                            p_name      => 'isFilterable'
+                          , p_value     => l_col_info_tab(i).filterable = 1
+                          )
+                          ||
+                          apex_javascript.add_attribute(
+                            p_name      => 'isVisible'
+                          , p_value     => l_col_info_tab(i).is_visible = 1
+                          )
+                          ||
+                          '}'
+                          ;
+
+      apex_string.push(l_col_config_arr, l_col_config_str);
+    end loop;
+
+    apex_javascript.add_onload_code (
+      p_code => 'window.hartenfeller_dev.plugins.offline_table.initAPEXRegion({' ||
+                apex_javascript.add_attribute(
+                  p_name      => 'regionId'
+                , p_value     => l_region_id_esc
+                ) 
+                ||
+                apex_javascript.add_attribute(
+                  p_name      => 'storageId'
+                , p_value     => p_region.attribute_01
+                )
+                ||
+                apex_javascript.add_attribute(
+                  p_name      => 'storageVersion'
+                , p_value     => to_number(p_region.attribute_02)
+                )
+                ||
+                -- it is an object so can't use add_attribute
+                ' colConfig: [' || apex_string.join(l_col_config_arr, ',') || '] , '
+                ||
+                '});'
+    );
+    
+    return l_result;
+  end render_table_region;
+
+
+end plugin_apex_off_grid_pkg;
 /

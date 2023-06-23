@@ -95,14 +95,13 @@ async function _getRows({
     expectedMessageType: WorkerMessageType.GetRowsResponse,
   });
 
-  const { ok, error, rows } = data as GetRowsResponse;
+  const { ok, error, rows, rowCount } = data as GetRowsResponse;
 
   if (!ok) {
     apex.debug.error(`Could not get rows: ${error}`);
-    return;
   }
 
-  return rows;
+  return { ok, error, rows, rowCount };
 }
 
 async function _getRowCount({
