@@ -97,6 +97,13 @@ export function getRowByPk(
 }
 
 type Binds = { [key: string]: number | string } | undefined;
+enum BuildQueryMode {
+  Rows = 'rows',
+  Count = 'count',
+}
+type BuildQueryModeT = {
+  mode?: BuildQueryMode;
+};
 
 export function buildQuery({
   storageId,
@@ -108,7 +115,8 @@ export function buildQuery({
   searchTerm,
   colFilters,
   colStructure,
-}: GetRowsMsgData): { sql: string; binds: Binds } {
+  mode = BuildQueryMode.Rows,
+}: GetRowsMsgData & BuildQueryModeT): { sql: string; binds: Binds } {
   const tabname = getTabname({ storageId, storageVersion });
   try {
     let sql = `select * from ${tabname} #WHERE# #ORDER_BY# #LIMIT#`;
@@ -135,7 +143,12 @@ export function buildQuery({
 
     let binds: { [key: string]: number | string } = {};
 
-    if (typeof offset === 'undefined' && typeof maxRows === 'undefined') {
+    if (mode === BuildQueryMode.Count) {
+      sql = sql.replace('#LIMIT#', '');
+    } else if (
+      typeof offset === 'undefined' &&
+      typeof maxRows === 'undefined'
+    ) {
       sql = sql.replace('#LIMIT#', '');
     } else if (offset) {
       sql = sql.replace('#LIMIT#', `limit $limit offset $offset`);
@@ -204,7 +217,12 @@ function fetchRowCount(sql: string, binds: Binds): number {
 
 export function getRows(args: GetRowsMsgData): GetRowsResponse {
   try {
-    const { sql, binds } = buildQuery(args);
+    const colStructure = getStorageColumns(args.storageId, args.storageVersion);
+    const { sql, binds } = buildQuery({
+      ...args,
+      colStructure,
+      mode: BuildQueryMode.Rows,
+    });
     const data = db.selectObjects(sql, binds);
 
     let rowCount: number | undefined;
@@ -213,7 +231,12 @@ export function getRows(args: GetRowsMsgData): GetRowsResponse {
       if (data.length < args.maxRows) {
         rowCount = data.length;
       } else {
-        rowCount = fetchRowCount(sql, binds);
+        const cntQuery = buildQuery({
+          ...args,
+          colStructure,
+          mode: BuildQueryMode.Count,
+        });
+        rowCount = fetchRowCount(cntQuery.sql, cntQuery.binds);
       }
     }
 

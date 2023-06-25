@@ -33,6 +33,11 @@
     }
   },
   "files": {
-    "ignore": ["**/jswasm/**", "**/node_modules/**"]
+    "ignore": [
+      "**/jswasm/**",
+      "**/node_modules/**",
+      "**/build/**",
+      "**/bundle.*"
+    ]
   }
 }
