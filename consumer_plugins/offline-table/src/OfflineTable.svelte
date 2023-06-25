@@ -1,4 +1,4 @@
-<svelte:options tag="p-offline-table" />
+<svelte:options customElement="p-offline-table" />
 
 <script>
   import "./initPlugin";
@@ -184,7 +184,7 @@
       </div>
       <div style="display: flow-root;">
         <div style="overflow-x: auto;">
-          <table class="table">
+          <table class="p-table">
             <thead>
               {#each $table.getHeaderGroups() as headerGroup}
                 <tr>
@@ -193,11 +193,10 @@
                       colSpan={header.colSpan}
                       class:p-th-min-width={header.column.columnDef.meta
                         ?.filter}
+                      class="p-th"
                     >
                       {#if !header.isPlaceholder}
-                        <div
-                          style="display:flex; justify-content: space-between;"
-                        >
+                        <div class="p-th-text">
                           <svelte:component
                             this={flexRender(
                               header.column.columnDef.header,
@@ -290,7 +289,7 @@
               {#each $table.getRowModel().rows as row}
                 <tr>
                   {#each row.getVisibleCells() as cell}
-                    <td>
+                    <td class="p-td">
                       <svelte:component
                         this={flexRender(
                           cell.column.columnDef.cell,
@@ -346,22 +345,6 @@
 </div>
 
 <style>
-  .p-odl-ul {
-    margin: 0;
-    padding: 0;
-    list-style-type: none;
-  }
-
-  .p-odl-li {
-    display: flex;
-  }
-
-  .p-odl-button-container {
-    margin: 16px 8px;
-    justify-content: center;
-    display: flex;
-  }
-
   .p-pagination {
     display: flex;
     justify-content: space-between;
@@ -571,6 +554,52 @@
 
   .p-th-min-width {
     min-width: 20ch;
+  }
+
+  .p-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-style: hidden;
+    border-spacing: 0;
+    table-layout: auto;
+  }
+
+  .p-th {
+    vertical-align: middle;
+    font-size: var(--a-gv-header-cell-font-size);
+    line-height: var(--a-gv-header-cell-line-height);
+    font-weight: var(
+      --a-gv-header-cell-font-weight,
+      var(--a-base-font-weight-bold, 700)
+    );
+    padding: 0;
+    height: var(--a-gv-header-cell-height, 40px);
+    background-color: var(--a-gv-header-background-color);
+    color: var(--a-gv-header-text-color);
+    border-width: var(--a-gv-header-cell-border-width, 1px);
+    border-style: solid;
+    border-color: var(--a-gv-header-cell-border-color);
+  }
+
+  .p-th-text {
+    padding: 0px 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .p-td {
+    -webkit-padding-start: var(--a-gv-cell-padding-x, 8px);
+    padding-inline-start: var(--a-gv-cell-padding-x, 8px);
+    -webkit-padding-end: var(--a-gv-cell-padding-x, 8px);
+    padding-inline-end: var(--a-gv-cell-padding-x, 8px);
+    -webkit-padding-before: var(--a-gv-cell-padding-y, 4px);
+    padding-block-start: var(--a-gv-cell-padding-y, 4px);
+    -webkit-padding-after: var(--a-gv-cell-padding-y, 4px);
+    padding-block-end: var(--a-gv-cell-padding-y, 4px);
+    height: var(--a-gv-cell-height, 32px);
+    border-width: var(--a-gv-cell-border-width, 1px);
+    border-style: solid;
+    border-color: var(--a-gv-cell-border-color);
   }
 
   @media (prefers-reduced-motion) {
