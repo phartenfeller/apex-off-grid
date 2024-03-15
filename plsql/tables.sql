@@ -10,9 +10,14 @@ create table offline_data_sync (
   sync_created_session number(14,0) not null,
   sync_import_failed   number(1,0) default on null 0 not null,
   sync_success_at      date,
+  sync_fail_reason     clob,
+  sync_device_pk       varchar2(4000),
+  sync_db_pk           varchar2(4000),
   constraint offline_data_sync_pk primary key (sync_id),
   constraint offlline_data_data_json_ck check (sync_data_json is json),
   constraint offlline_data_import_failed_ck check (sync_import_failed in (0,1))
 );
 
 create index offline_data_sync_storage_idx on offline_data_sync (sync_storage_id, sync_storage_version);
+create index offline_data_sync_failed_idx on offline_data_sync (sync_import_failed);
+create index offline_data_sync_device_pk_idx on offline_data_sync (sync_device_pk);

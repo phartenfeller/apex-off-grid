@@ -160,6 +160,13 @@ create or replace package body plugin_apex_off_grid_pkg as
     l_col_info          apex_exec.t_column;
     l_col_info_exec_tab apex_exec.t_columns;
   begin
+    apex_debug.trace('get_server_changed_rows pi_pk_colname: ' || pi_pk_colname);
+    apex_debug.trace('get_server_changed_rows pi_source_query: ' || pi_source_query);
+    if pi_pk_colname is null or pi_source_query is null then
+      apex_debug.error('get_server_changed_rows: pi_pk_colname or pi_source_query is null');
+      raise no_data_found;
+    end if;
+
     l_clob := get_json_clob();
     apex_json.parse
       (
@@ -224,6 +231,7 @@ create or replace package body plugin_apex_off_grid_pkg as
 
     l_sync_template_row offline_data_sync%rowtype;
     l_sync_row          offline_data_sync%rowtype;
+    l_success           boolean;
   begin
     l_clob := get_json_clob();
     l_json := json_object_t(l_clob);
@@ -253,9 +261,28 @@ create or replace package body plugin_apex_off_grid_pkg as
       l_sync_row := l_sync_template_row;
       l_sync_row.sync_data_json := TREAT(l_rows_arr.get(i) AS JSON_OBJECT_T).to_clob();
 
-      insert into offline_data_sync values l_sync_row returning sync_id into l_sync_row.sync_id;
+      offline_data_sync_api.sync_row(
+        pi_json_str             => l_sync_row.sync_data_json
+      , pi_sync_storage_id      => l_sync_row.sync_storage_id
+      , pi_sync_storage_version => l_sync_row.sync_storage_version
+      , po_succes               => l_success
+      , po_sync_fail_reason     => l_sync_row.sync_fail_reason
+      , po_sync_device_pk       => l_sync_row.sync_device_pk
+      , po_snyc_db_pk           => l_sync_row.sync_db_pk
+      );
 
-      offline_data_sync_api.sync_row(l_sync_row);
+      if  l_success is null or
+          l_success = false or
+          l_sync_row.sync_fail_reason is not null 
+        then
+
+        l_sync_row.sync_import_failed := 1;
+      else
+        l_sync_row.sync_import_failed := 0;
+        l_sync_row.sync_success_at := sysdate;
+      end if;
+
+      insert into offline_data_sync values l_sync_row returning sync_id into l_sync_row.sync_id;
     end loop;
 
     apex_json.write('ok', true);

@@ -4,6 +4,43 @@ create or replace package body offline_data_sync_api as
 
   c_unix_epoch date := to_date('1970-01-01', 'YYYY-MM-DD');
 
+  function get_change_date (
+		pi_json in json_object_t
+	) return date
+	as
+	begin
+		return c_unix_epoch + NUMTODSINTERVAL( (pi_json.get_number('__change_ts') / 1000), 'SECOND' );
+	end get_change_date;
+
+	function get_change_type (
+		pi_json in json_object_t
+	) return varchar2
+	as
+	begin
+		return pi_json.get_string('__change_type');
+	end get_change_type;
+
+	procedure remove_json_metadata (
+		pi_json in out json_object_t
+	)
+	as
+	begin
+		pi_json.remove('__change_ts');
+		pi_json.remove('__change_type');
+	end remove_json_metadata;
+
+	function num_to_date (
+		pi_number in number
+	) return date
+	as
+		l_date date;
+	begin
+		l_date := c_unix_epoch + NUMTODSINTERVAL( (pi_number / 1000), 'SECOND' );
+		apex_debug.info( apex_string.format('num_to_date - Input: %0, output: %1', pi_number, to_char(l_date, 'YYYY-MM-DD HH24:MI:SS')) );
+		return l_date;
+	end num_to_date;
+
+
   procedure process_people_v1 (
     pi_row     in offline_data_sync%rowtype
   , po_suceess out nocopy boolean
@@ -131,46 +168,42 @@ create or replace package body offline_data_sync_api as
   end process_people_v1;
 
   procedure sync_row (
-    pi_row in offline_data_sync%rowtype
+    pi_json_str             in offline_data_sync.sync_data_json%type
+  , pi_sync_storage_id      in offline_data_sync.sync_storage_id%type
+  , pi_sync_storage_version in offline_data_sync.sync_storage_version%type
+  , po_succes               out nocopy boolean
+  , po_sync_fail_reason     out nocopy offline_data_sync.sync_fail_reason%type
+  , po_sync_device_pk       out nocopy offline_data_sync.sync_device_pk%type
+  , po_snyc_db_pk           out nocopy offline_data_sync.sync_db_pk%type
   )
   as
-    l_success boolean;
-
-    --l_scope  logger_logs.scope%type := gc_scope_prefix || 'sync_row';
-    --l_params logger.tab_param;
+    l_json				json_object_t;
+		l_change_type varchar2(1);
+		l_change_date date;
   begin
-    --logger.append_param(l_params, 'sync_id', pi_row.sync_id);
-    --logger.append_param(l_params, 'sync_storage_id', pi_row.sync_storage_id);
-    --logger.append_param(l_params, 'sync_storage_version', pi_row.sync_storage_version);
-    --logger.log('START', l_scope, null, l_params);
-    
-    case when pi_row.sync_storage_id = 'people' and pi_row.sync_storage_version = 1 then
-      process_people_v1(pi_row, l_success);
+    po_succes := false;
+		l_json := json_object_t.parse(pi_json_str);
+		l_change_date := get_change_date(l_json);
+		l_change_type := get_change_type(l_json);
+		remove_json_metadata(l_json);
+
+		apex_debug.info( apex_string.format('Processing %0 v%1...', pi_sync_storage_id, pi_sync_storage_version) );
+		apex_debug.info( apex_string.format('Change Type: %0', l_change_type) );
+		apex_debug.info( apex_string.format('Change Date: %0', to_char(l_change_date, 'YYYY-MM-DD HH24:MI:SS')) );
+		apex_debug.info( apex_string.format('Data: %0', l_json.stringify) );
+
+
+    case when pi_sync_storage_id = 'people' and pi_sync_storage_version = 1 then
+      process_people_v1(pi_row, po_succes);
     else
-      raise_application_error(-20001, 'Unhandeled sync_storage_id or sync_storage_version => ' || pi_row.sync_storage_id || ' ' || pi_row.sync_storage_version);
+      po_sync_fail_reason := apex_string.format('Unhandled storage: %0 v%1', pi_sync_storage_id, pi_sync_storage_version);
       return;
     end case;
 
-    --logger.log('l_success => ' || case when l_success then 'true' else 'false' end, l_scope, null, l_params);
-
-    if not l_success then
-
-      update offline_data_sync
-         set sync_import_failed = 1
-       where sync_id = pi_row.sync_id;
-
-    else
-
-      update offline_data_sync
-         set sync_success_at = sysdate
-       where sync_id = pi_row.sync_id;
-    end if;
-
-    --logger.log('END', l_scope, null, l_params);
   exception
     when others then
-      --logger.log_error('Unhandled Exception', l_scope, null, l_params);
-      raise;
+      -- do not raise, just insert snyc as failed
+      po_sync_fail_reason := sqlerrm || ' | ' || dbms_utility.format_error_backtrace;
   end sync_row;
 
 end offline_data_sync_api;
