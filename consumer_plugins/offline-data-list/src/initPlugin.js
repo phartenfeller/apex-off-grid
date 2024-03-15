@@ -27,7 +27,11 @@ const _initAPEXRegion = ({
 
   if (!window.apex) return;
 
-  apex.region.create(regionId, {});
+  apex.region.create(regionId, {
+    refresh: () => {
+      el.refresh();
+    },
+  });
 };
 
 window.hartenfeller_dev = window.hartenfeller_dev || {};

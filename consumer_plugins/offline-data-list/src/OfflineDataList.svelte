@@ -1,4 +1,4 @@
-<svelte:options tag="p-offline-data-list" />
+<svelte:options customElement="p-offline-data-list" />
 
 <script>
   import "./initPlugin";
@@ -24,6 +24,13 @@
   let searchTerm = "";
   let spinner$;
 
+  function logTrace(...args) {
+    if (!window?.apex) {
+      return;
+    }
+    apex.debug.trace("p-offline-data-list", ...args);
+  }
+
   function wait(ms) {
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
@@ -44,6 +51,7 @@
     noDataFound = rowCount === 0;
 
     lastPage = Math.ceil(rowCount / pageSize);
+    logTrace("resetState", { rowCount, lastPage, searchTerm });
   }
 
   async function getStorageInfo() {
@@ -88,6 +96,8 @@
         storageKey
       ].getColInfo();
 
+    logTrace("resetState", { colInfo });
+
     return colInfo;
   }
 
@@ -98,6 +108,18 @@
       await window.hartenfeller_dev.plugins.sync_offline_data.storages[
         storageKey
       ].getRows({ offset, maxRows: pageSize ?? 15, searchTerm });
+
+    logTrace("fetchMoreRows", {
+      offset,
+      maxRows: pageSize ?? 15,
+      searchTerm,
+      data,
+    });
+
+    if (!data || !data.ok) {
+      apex.debug.error(`Could not fetch more rows.`, error, data);
+      return;
+    }
 
     return data;
   }
@@ -110,23 +132,32 @@
       return;
     }
 
+    const rows = data.rows;
+
     try {
-      const testHeader = headerFc(data[0]);
+      const testHeader = headerFc(rows[0]);
       if (!testHeader) {
         apex.debug.error(
           `Could not add page as header function returns null. Row =>`,
-          data[0]
+          rows[0],
         );
         return;
       }
     } catch (e) {
       apex.debug.error(
-        `Could not add page as header function throws an error: ${e}`
+        `Could not add page as header function throws an error: ${e}`,
       );
       return;
     }
 
-    const headers = data.map((r) => ({ title: headerFc(r), id: r[pkCol] }));
+    const headers = rows.map((r) => ({
+      title: headerFc(r),
+      id: r[pkCol],
+    }));
+    logTrace("applied titles", {
+      pageNo,
+      headers,
+    });
     pages.set(pageNo, headers);
     currentPageItems = headers;
   }
@@ -155,7 +186,7 @@
   onMount(async () => {
     storageKey = `${storageId}_v${storageVersion}`;
 
-    apex.debug.trace("Setup p-offline-data-list", {
+    logTrace("setup", {
       regionId,
       pageSize,
       headerFc,
@@ -184,7 +215,7 @@
     apex.event.trigger(
       document.getElementById(regionId),
       "p-offline-data-list:select",
-      { id }
+      { id },
     );
   }
 
@@ -198,6 +229,12 @@
 
       addPage(1);
     }, 250);
+  }
+
+  export async function refresh() {
+    const currPageCopy = currentPage;
+    await resetState();
+    addPage(currPageCopy);
   }
 </script>
 
@@ -346,8 +383,11 @@
       --a-button-state-shadow,
       var(--a-button-type-shadow, var(--a-button-shadow, none))
     );
-    transition: background-color 0.2s ease, border-color 0.2s ease,
-      box-shadow 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
     display: inline-block;
     align-items: center;
     -webkit-appearance: none;
@@ -487,12 +527,19 @@
           var(--a-field-input-border-width, 1px)
       )
     );
-    transition: background-color 0.2s ease, border-color 0.2s ease,
-      box-shadow 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
     vertical-align: top;
     width: 90%;
     padding: 9px;
     margin: 12px 0px;
+  }
+
+  div {
+    outline: none !important;
   }
 
   @media (prefers-reduced-motion) {
