@@ -259,6 +259,15 @@ async function initStorageWithSource({
   payload.pkColname = pkColname;
   payload.lastChangedColname = lastChangedColname;
 
+  const lastChangedCol = colData.find(
+    (col) => col.colname === lastChangedColname,
+  );
+  if (lastChangedCol.datatype !== 'real') {
+    const errm = `lastChangedColname ${lastChangedColname} must be converted to a number. Query the column like this: "(LAST_CHANGED - DATE '1970-01-01') * 86400000 as LAST_CHANGED"`;
+    apex.debug.error(errm);
+    throw new Error(errm);
+  }
+
   const { data } = await sendMsgToWorker({
     storageId,
     storageVersion,

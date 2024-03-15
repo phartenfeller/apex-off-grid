@@ -73,8 +73,8 @@ export function addMetaEntry({
       $storageId: storageId,
       $storageVersion: storageVersion,
       $colData: JSON.stringify(colData),
-      $pkColname: pkColname,
-      $lastChangedColname: lastChangedColname,
+      $pkColname: pkColname.toUpperCase(),
+      $lastChangedColname: lastChangedColname.toUpperCase(),
     },
   });
 }
@@ -147,10 +147,15 @@ export function getStorageColumns(
 }
 
 export function getPkColType(structure: ColStructure) {
-  const pkCol = structure.cols.find(
-    (col) => col.colname === structure.pkCol,
-  ) as Colinfo;
-  return pkCol.datatype;
+  try {
+    const pkCol = structure.cols.find(
+      (col) => col.colname === structure.pkCol,
+    ) as Colinfo;
+    return pkCol.datatype;
+  } catch (e) {
+    log.error('Error getting pk col type. structure:', structure, 'Error', e);
+    throw new Error(`Error getting pk col type: ${e}`);
+  }
 }
 
 export function getLastSync({

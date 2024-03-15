@@ -94,6 +94,12 @@ export async function initSource({
         log.warn(`Table exists but meta entry does not: "${tabname}"`);
       }
 
+      if (!pkColname) {
+        throw new Error('Trying to init source without pkColname');
+      } else if (!lastChangedColname) {
+        throw new Error('Trying to init source without lastChangedColname');
+      }
+
       await addMetaEntry({
         storageId,
         storageVersion,
