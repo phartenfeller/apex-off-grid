@@ -68,6 +68,11 @@ async function _fillForm({ storageId, storageVersion, pkPageItem }) {
 
   for (const col of colInfo.cols) {
     const itemName = `P${pageId}_${col.colname}`;
+
+    if (itemName === pkPageItem) {
+      continue;
+    }
+
     const pageItem = apex.items[itemName];
     if (!pageItem) {
       apex.debug.trace(`Page item '${itemName}' not found!`);
