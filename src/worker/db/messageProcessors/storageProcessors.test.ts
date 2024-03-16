@@ -82,4 +82,76 @@ describe('buildQuery', () => {
     expect(query.sql.match(/where/gi)?.length).toBe(1);
     expect(query.binds).toEqual({ $YEAR_filter: '%1999%', $limit: 25 });
   });
+
+  test('Uses where clause correctly', () => {
+    const query = buildQuery({
+      storageId: 'movies',
+      storageVersion: 1,
+      offset: 0,
+      maxRows: 25,
+      colStructure: {
+        cols: [
+          { colname: 'MOVIE_ID', datatype: 'real', isRequired: true },
+          {
+            colname: 'ORIG_TITLE',
+            datatype: 'text',
+            datatypeLength: 1020,
+            isRequired: false,
+          },
+          { colname: 'YEAR', datatype: 'real', isRequired: false },
+          { colname: 'RUNTIME', datatype: 'real', isRequired: false },
+          { colname: 'CERTIFICATE', datatype: 'real', isRequired: false },
+          {
+            colname: 'DESCRIPTION',
+            datatype: 'text',
+            datatypeLength: 4000,
+            isRequired: false,
+          },
+          { colname: 'BUDGET', datatype: 'real', isRequired: false },
+          { colname: 'WORLD_WIDE_GROSS', datatype: 'real', isRequired: false },
+          {
+            colname: 'BUDGET_CURRENCY',
+            datatype: 'text',
+            datatypeLength: 40,
+            isRequired: false,
+          },
+          { colname: 'IMDB_RATING', datatype: 'real', isRequired: false },
+          { colname: 'VOTES', datatype: 'real', isRequired: false },
+          {
+            colname: 'GENRES',
+            datatype: 'text',
+            datatypeLength: 4000,
+            isRequired: false,
+          },
+          {
+            colname: 'CAST',
+            datatype: 'text',
+            datatypeLength: 4000,
+            isRequired: false,
+          },
+          {
+            colname: 'DIRECTORS',
+            datatype: 'text',
+            datatypeLength: 4000,
+            isRequired: false,
+          },
+          {
+            colname: 'WRITERS',
+            datatype: 'text',
+            datatypeLength: 4000,
+            isRequired: false,
+          },
+          { colname: 'LAST_CHANGED', datatype: 'real', isRequired: false },
+        ],
+        lastChangedCol: 'LAST_CHANGED',
+        pkCol: 'MOVIE_ID',
+      },
+      whereClause: "MOVIE_ID = 1 and ORIG_TITLE = 'The Matrix'",
+    });
+
+    expect(query.sql).toContain('select * from movies_v1 where');
+    expect(query.sql).toContain(
+      `( MOVIE_ID = 1 and ORIG_TITLE = 'The Matrix' )`,
+    );
+  });
 });

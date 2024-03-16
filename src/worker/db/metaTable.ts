@@ -151,6 +151,13 @@ export function getPkColType(structure: ColStructure) {
     const pkCol = structure.cols.find(
       (col) => col.colname === structure.pkCol,
     ) as Colinfo;
+    if (!pkCol) {
+      throw new Error(
+        `Primary key column ${
+          structure.pkCol
+        } not found in columns: ${JSON.stringify(structure.cols)}`,
+      );
+    }
     return pkCol.datatype;
   } catch (e) {
     log.error('Error getting pk col type. structure:', structure, 'Error', e);

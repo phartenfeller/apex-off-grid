@@ -116,6 +116,7 @@ export function buildQuery({
   colFilters,
   colStructure,
   mode = BuildQueryMode.Rows,
+  whereClause,
 }: GetRowsMsgData & BuildQueryModeT): { sql: string; binds: Binds } {
   const tabname = getTabname({ storageId, storageVersion });
   try {
@@ -162,6 +163,11 @@ export function buildQuery({
     const whereTerms: string[] = [];
     // always exclude deleted rows
     whereTerms.push(`(__change_type is null or __change_type != 'D')`);
+
+    if (whereClause) {
+      log.trace('using custom where clause:', whereClause);
+      whereTerms.push(`( ${whereClause} )`);
+    }
 
     if (searchTerm) {
       const { where, bindVal } = prepareSearchTerm(searchTerm, colnames);
@@ -260,6 +266,7 @@ export function getRowCount({
   storageId,
   searchTerm,
   colFilters,
+  whereClause,
 }: GetRowCountMsgData): GetRowCountResponse {
   try {
     const { sql, binds } = buildQuery({
@@ -267,6 +274,7 @@ export function getRowCount({
       storageVersion,
       searchTerm,
       colFilters,
+      whereClause,
     });
 
     const rowCount = fetchRowCount(sql, binds);

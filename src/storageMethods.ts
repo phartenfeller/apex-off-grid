@@ -11,6 +11,7 @@ import {
 } from './globalConstants';
 import { sendMsgToWorker } from './messageBus';
 import { syncRows } from './sync';
+import evalPageItems from './util/evalPageItems';
 import { DbRow } from './worker/db/types';
 
 async function _getColInfo(
@@ -76,9 +77,14 @@ async function _getRows({
   searchTerm,
   colFilters,
   getRowCount,
+  whereClause,
 }: StorageInfo & {
   apex: any;
 } & GetRowsArgs) {
+  if (whereClause) {
+    whereClause = evalPageItems(whereClause);
+  }
+
   const { data } = await sendMsgToWorker({
     storageId,
     storageVersion,
@@ -91,6 +97,7 @@ async function _getRows({
       searchTerm,
       colFilters,
       getRowCount,
+      whereClause,
     },
     expectedMessageType: WorkerMessageType.GetRowsResponse,
   });
@@ -110,6 +117,7 @@ async function _getRowCount({
   apex,
   searchTerm,
   colFilters,
+  whereClause,
 }: StorageInfo & {
   apex: any;
 } & RowFilterArgs) {
@@ -117,7 +125,7 @@ async function _getRowCount({
     storageId,
     storageVersion,
     messageType: WorkerMessageType.GetRowCount,
-    data: { searchTerm, colFilters },
+    data: { searchTerm, colFilters, whereClause },
     expectedMessageType: WorkerMessageType.GetRowCountResponse,
   });
 
@@ -216,6 +224,7 @@ export default function initStorageMethods({
       searchTerm,
       colFilters,
       getRowCount,
+      whereClause,
     }: GetRowsArgs) =>
       _getRows({
         storageId,
@@ -228,9 +237,17 @@ export default function initStorageMethods({
         searchTerm,
         colFilters,
         getRowCount,
+        whereClause,
       }),
-    getRowCount: ({ searchTerm, colFilters }: RowFilterArgs) =>
-      _getRowCount({ storageId, storageVersion, apex, searchTerm, colFilters }),
+    getRowCount: ({ searchTerm, colFilters, whereClause }: RowFilterArgs) =>
+      _getRowCount({
+        storageId,
+        storageVersion,
+        apex,
+        searchTerm,
+        colFilters,
+        whereClause,
+      }),
     writeChanges: (rows: DbRow[]) =>
       _writeChanges({ storageId, storageVersion, rows, apex }),
     sync: () => _sync({ storageId, storageVersion, apex, pageSize, ajaxId }),

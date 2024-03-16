@@ -262,6 +262,15 @@ async function initStorageWithSource({
   const lastChangedCol = colData.find(
     (col) => col.colname === lastChangedColname,
   );
+
+  if (!lastChangedCol) {
+    const errm = `lastChangedColname ${lastChangedColname} not found in source_structure: ${JSON.stringify(
+      colData,
+    )}`;
+    apex.debug.error(errm);
+    throw new Error(errm);
+  }
+
   if (lastChangedCol.datatype !== 'real') {
     const errm = `lastChangedColname ${lastChangedColname} must be converted to a number. Query the column like this: "(LAST_CHANGED - DATE '1970-01-01') * 86400000 as LAST_CHANGED"`;
     apex.debug.error(errm);

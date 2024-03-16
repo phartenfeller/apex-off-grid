@@ -142,6 +142,7 @@ export type ColFilter = { colname: string; filter: string };
 export type RowFilterArgs = {
   searchTerm?: string;
   colFilters?: ColFilter[];
+  whereClause?: string;
 };
 
 export type GetRowsArgs = {
@@ -150,6 +151,7 @@ export type GetRowsArgs = {
   orderByCol?: string;
   orderByDir?: OrderByDir;
   getRowCount?: boolean;
+  whereClause?: string;
 } & RowFilterArgs;
 
 export type GetRowsMsgData = BaseRequestData &
