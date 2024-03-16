@@ -1,14 +1,17 @@
 <svelte:options customElement="p-offline-table" />
 
 <script>
+  import "./global.css";
   import "./initPlugin";
   import {
     getCoreRowModel,
     createSvelteTable,
     flexRender,
+    renderComponent,
   } from "@tanstack/svelte-table";
   import { onMount } from "svelte";
   import { writable } from "svelte/store";
+  import TblButton from "./TblButton.svelte";
 
   export let regionId, pageSize, storageId, storageVersion, colConfig;
 
@@ -56,8 +59,6 @@
       ].getRows(args);
 
     const { ok, error, rows, rowCount } = res;
-
-    console.log("wtf", res);
 
     if (ok !== true) {
       apex.debug.error(error);
@@ -124,15 +125,36 @@
   onMount(() => {
     columns = colConfig
       .filter((c) => c.isVisible)
-      .map((c) => ({
-        id: c.name,
-        accessorKey: c.name,
-        header: c.heading,
-        enableSorting: c.isSortable,
-        meta: {
-          filter: c.isFilterable,
-        },
-      }));
+      .map((c) => {
+        if (c.type === "BUTTON") {
+          return {
+            id: c.name,
+            accessorKey: c.name,
+            header: c.heading,
+            enableSorting: c.isSortable,
+            meta: {
+              filter: c.isFilterable,
+            },
+            cell: (info) =>
+              renderComponent(TblButton, {
+                row: info.row,
+                style: c.buttonStyle,
+                label: c.buttonLabel,
+                actionFc: c.buttonAction,
+              }),
+          };
+        } else {
+          return {
+            id: c.name,
+            accessorKey: c.name,
+            header: c.heading,
+            enableSorting: c.isSortable,
+            meta: {
+              filter: c.isFilterable,
+            },
+          };
+        }
+      });
 
     options = writable({
       data: [],
@@ -200,7 +222,7 @@
                           <svelte:component
                             this={flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )}
                           />
                           {#if header.column.getCanSort()}
@@ -273,7 +295,7 @@
                             on:input={() =>
                               setFilter(
                                 header.column.id,
-                                filters[header.column.id]
+                                filters[header.column.id],
                               )}
                             placeholder={`Filter by ${header.column.columnDef.header}...`}
                           />
@@ -293,7 +315,7 @@
                       <svelte:component
                         this={flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       />
                     </td>
@@ -352,16 +374,15 @@
     margin: 16px 8px;
   }
 
-  .p-simple-btn {
+  :global(.p-simple-btn) {
     all: unset;
     display: block;
-    background-color: var(
-      --a-button-state-background-color,
-      var(
-        --a-button-type-background-color,
-        var(--a-button-background-color, transparent)
-      )
-    );
+    background-color: var(--a-button-background-color);
+    color: var(--a-button-text-color);
+    border-color: var(--a-button-border-color);
+    box-shadow: var(--a-button-shadow);
+    border-width: 1px;
+    border-style: solid;
     padding: 4px 8px;
     font-weight: 500;
     font-size: 1rem;
@@ -372,15 +393,15 @@
     transition-duration: 150ms;
   }
 
-  .p-simple-btn:hover {
-    background-color: var(
-      --a-button-active-background-color,
-      var(--a-button-hover-background-color)
-    );
+  :global(.p-simple-btn):hover {
+    background-color: var(--a-button-hover-background-color);
+    border-color: var(--a-button-hover-border-color);
+    box-shadow: var(--a-button-hover-shadow);
   }
 
-  .p-simple-btn:focus {
-    outline: none;
+  :global(.p-simple-btn):focus {
+    background-color: var(--a-button-focus-background-color);
+    border-color: var(--a-button-focus-border-color);
   }
 
   .p-apex-btn {
@@ -403,8 +424,11 @@
       --a-button-state-shadow,
       var(--a-button-type-shadow, var(--a-button-shadow, none))
     );
-    transition: background-color 0.2s ease, border-color 0.2s ease,
-      box-shadow 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
     display: inline-block;
     align-items: center;
     -webkit-appearance: none;
@@ -544,8 +568,11 @@
           var(--a-field-input-border-width, 1px)
       )
     );
-    transition: background-color 0.2s ease, border-color 0.2s ease,
-      box-shadow 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
     vertical-align: top;
     width: 90%;
     padding: 9px;
@@ -603,7 +630,7 @@
   }
 
   @media (prefers-reduced-motion) {
-    .p-simple-btn {
+    :global(.p-simple-btn) {
       transition: none;
     }
   }

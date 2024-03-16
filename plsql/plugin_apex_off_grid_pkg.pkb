@@ -16,6 +16,10 @@ create or replace package body plugin_apex_off_grid_pkg as
   , heading               APEX_APPLICATION_PAGE_REG_COLS.heading%type
   , sortable              number(1,0)
   , filterable            number(1,0)
+  , type                  varchar2(100)
+  , button_style          varchar2(100)
+  , button_label          varchar2(4000)
+  , button_action         varchar2(32000)
   );
 
   type tt_table_region_col_info is table of t_table_region_col_info;
@@ -265,7 +269,7 @@ create or replace package body plugin_apex_off_grid_pkg as
         pi_json_str             => l_sync_row.sync_data_json
       , pi_sync_storage_id      => l_sync_row.sync_storage_id
       , pi_sync_storage_version => l_sync_row.sync_storage_version
-      , po_succes               => l_success
+      , po_success              => l_success
       , po_sync_fail_reason     => l_sync_row.sync_fail_reason
       , po_sync_device_pk       => l_sync_row.sync_device_pk
       , po_snyc_db_pk           => l_sync_row.sync_db_pk
@@ -651,6 +655,10 @@ create or replace package body plugin_apex_off_grid_pkg as
           , c.heading
           , case when c.attribute_01 = 'Y' then 1 else 0 end as sortable
           , case when c.attribute_01 = 'Y' then 1 else 0 end as filterable
+          , c.attribute_03 as type
+          , c.attribute_04 as button_style
+          , c.attribute_05 as button_label
+          , c.attribute_06 as button_action
         bulk collect into l_col_info_tab
         from APEX_APPLICATION_PAGE_REGIONS r 
         join APEX_APPLICATION_PAGE_REG_COLS c
@@ -667,6 +675,10 @@ create or replace package body plugin_apex_off_grid_pkg as
           , c.heading
           , case when c.attribute_01 = 'Y' then 1 else 0 end as sortable
           , case when c.attribute_01 = 'Y' then 1 else 0 end as filterable
+          , c.attribute_03 as type
+          , c.attribute_04 as button_style
+          , c.attribute_05 as button_label
+          , c.attribute_06 as button_action
         bulk collect into l_col_info_tab
         from APEX_APPLICATION_PAGE_REGIONS r 
         join APEX_APPLICATION_PAGE_REG_COLS c
@@ -746,6 +758,24 @@ create or replace package body plugin_apex_off_grid_pkg as
                             p_name      => 'isVisible'
                           , p_value     => l_col_info_tab(i).is_visible = 1
                           )
+                          ||
+                          apex_javascript.add_attribute(
+                            p_name      => 'type'
+                          , p_value     => l_col_info_tab(i).type
+                          )
+                          ||
+                          apex_javascript.add_attribute(
+                            p_name      => 'buttonStyle'
+                          , p_value     => l_col_info_tab(i).button_style
+                          )
+                          ||
+                          apex_javascript.add_attribute(
+                            p_name      => 'buttonLabel'
+                          , p_value     => l_col_info_tab(i).button_label
+                          )
+                          ||
+                          -- it is a fc so can't use add_attribute
+                          ' buttonAction: ' || coalesce(l_col_info_tab(i).button_action, 'null')
                           ||
                           '}'
                           ;

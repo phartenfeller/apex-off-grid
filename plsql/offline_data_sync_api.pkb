@@ -42,68 +42,44 @@ create or replace package body offline_data_sync_api as
 
 
   procedure process_people_v1 (
-    pi_row     in offline_data_sync%rowtype
-  , po_suceess out nocopy boolean
+    pi_json                 in json_object_t
+  , pi_change_type          in varchar2
+  , pi_change_date          in date
+  , pi_updated_by           in varchar2
+  , po_success              out nocopy boolean
+  , po_sync_fail_reason     out nocopy offline_data_sync.sync_fail_reason%type
+  , po_sync_device_pk       out nocopy offline_data_sync.sync_device_pk%type
+  , po_snyc_db_pk           out nocopy offline_data_sync.sync_db_pk%type
   )
   as
-    --l_scope  logger_logs.scope%type := gc_scope_prefix || 'process_people_v1';
-    --l_params logger.tab_param;
-
-    l_json json_object_t;
-    l_change_type varchar2(100);
-    l_change_date date;
-
     l_row offl_people%rowtype;
     l_db_row_last_changed offl_people.last_changed%type;
   begin
-    --logger.append_param(l_params, 'sync_id', pi_row.sync_id);
-    --logger.log('START', l_scope, null, l_params);
+    l_row.id := pi_json.get_number('ID');
+    l_row.email := pi_json.get_string('EMAIL');
+    l_row.salary := pi_json.get_number('SALARY');
+    l_row.company := pi_json.get_string('COMPANY');
+    l_row.skillset := pi_json.get_string('SKILLSET');
+    l_row.first_name := pi_json.get_string('FIRST_NAME');
+    l_row.last_name := pi_json.get_string('LAST_NAME');
+    l_row.shirt_size := pi_json.get_string('SHIRT_SIZE');
+    l_row.last_changed := num_to_date(pi_json.get_number('LAST_CHANGED'));
 
 
-    l_json := json_object_t(pi_row.sync_data_json);
-    --logger.log('l_json => ' || l_json.to_string, l_scope, null, l_params);
-
-    l_change_type := l_json.get_string('__change_type');
-    --logger.append_param(l_params, 'l_change_type', l_change_type);
-    l_change_date := c_unix_epoch + NUMTODSINTERVAL( (l_json.get_number('__change_ts') / 1000), 'SECOND');
-    --logger.append_param(l_params, 'l_change_date', l_change_date);
-
-    l_row.id := l_json.get_number('ID');
-    --logger.append_param(l_params, 'id', l_row.id);
-    l_row.email := l_json.get_string('EMAIL');
-    --logger.append_param(l_params, 'email', l_row.email);
-    l_row.salary := l_json.get_number('SALARY');
-    --logger.append_param(l_params, 'salary', l_row.salary);
-    l_row.company := l_json.get_string('COMPANY');
-    --logger.append_param(l_params, 'company', l_row.company);
-    l_row.skillset := l_json.get_string('SKILLSET');
-    --logger.append_param(l_params, 'skillset', l_row.skillset);
-    l_row.first_name := l_json.get_string('FIRST_NAME');
-    --logger.append_param(l_params, 'first_name', l_row.first_name);
-    l_row.last_name := l_json.get_string('LAST_NAME');
-    --logger.append_param(l_params, 'last_name', l_row.last_name);
-    l_row.shirt_size := l_json.get_string('SHIRT_SIZE');
-    --logger.append_param(l_params, 'shirt_size', l_row.shirt_size);
-    --l_row.birthday := l_json.get_string('BIRTHDAY');
-    l_row.last_changed := c_unix_epoch + NUMTODSINTERVAL( (l_json.get_number('LAST_CHANGED') / 1000), 'SECOND');
-    --logger.append_param(l_params, 'last_changed', l_row.last_changed);
-
-
-    case l_change_type
+    case pi_change_type
       when 'I' then
+        po_sync_device_pk := l_row.id;
 
         select max(id) + 1
           into l_row.id
           from offl_people
         ;
 
-         l_row.last_changed := l_change_date;
+        po_snyc_db_pk := l_row.id;
 
         insert into offl_people
           values l_row
         ;
-
-        --logger.log('Inserted row with id => ' || l_row.id, l_scope, null, l_params);
 
       when 'U' then
 
@@ -113,24 +89,17 @@ create or replace package body offline_data_sync_api as
           where id = l_row.id
         ;
 
-        --logger.log('l_db_row_last_changed => ' || to_char(l_db_row_last_changed, 'YYYY-MM-DD HH24:MI:SS'), l_scope, null, l_params);
-        --logger.log('l_row.last_changed => ' || to_char(l_row.last_changed, 'YYYY-MM-DD HH24:MI:SS'), l_scope, null, l_params);
-
         if l_db_row_last_changed != l_row.last_changed then
-          --logger.log_warn('update: last_changed mismatch => ' || to_char(l_db_row_last_changed, 'YYYY-MM-DD HH24:MI:SS') || ' != ' || to_char(l_row.last_changed, 'YYYY-MM-DD HH24:MI:SS'), l_scope, null, l_params);
-          po_suceess := false;
+          apex_debug.info('update: last_changed mismatch => ' || to_char(l_db_row_last_changed, 'YYYY-MM-DD HH24:MI:SS') || ' != ' || to_char(l_row.last_changed, 'YYYY-MM-DD HH24:MI:SS'));
+          po_sync_fail_reason := 'CHANGE_MISMATCH';
+          po_success := false;
           return;
         end if;
-        
-        l_row.last_changed := l_change_date;
 
         update offl_people
           set row = l_row
         where id = l_row.id
         ;
-
-        --logger.log('Updated row with id => ' || l_row.id, l_scope, null, l_params);
-
 
       when 'D' then
 
@@ -141,8 +110,8 @@ create or replace package body offline_data_sync_api as
         ;
 
         if l_db_row_last_changed != l_row.last_changed then
-          --logger.log_warn('delete: last_changed mismatch => ' || to_char(l_db_row_last_changed, 'YYYY-MM-DD HH24:MI:SS') || ' != ' || to_char(l_row.last_changed, 'YYYY-MM-DD HH24:MI:SS'), l_scope, null, l_params);
-          po_suceess := false;
+          po_sync_fail_reason := 'CHANGE_MISMATCH';
+          po_success := false;
           return;
         end if;
 
@@ -150,28 +119,21 @@ create or replace package body offline_data_sync_api as
           from offl_people
           where id = l_row.id
         ;
-        
-        --logger.log('Deleted row with id => ' || l_row.id, l_scope, null, l_params);
-      else
-        --logger.log_error('Unhandled change_type => ' || l_change_type, l_scope, null, l_params);
-        po_suceess := false;
-        return;
     end case;
 
-    po_suceess := true;
-    --logger.log('END', l_scope, null, l_params);
+    po_success := true;
   exception
     when others then
-      --logger.log_error('Unhandled Exception', l_scope, null, l_params);
       apex_debug.error('Error in process_people_v1 => ' || sqlerrm || ' | ' || dbms_utility.format_error_backtrace);
-      po_suceess := false;
+      po_sync_fail_reason := sqlerrm || ' | ' || dbms_utility.format_error_backtrace;
+      po_success := false;
   end process_people_v1;
 
   procedure sync_row (
     pi_json_str             in offline_data_sync.sync_data_json%type
   , pi_sync_storage_id      in offline_data_sync.sync_storage_id%type
   , pi_sync_storage_version in offline_data_sync.sync_storage_version%type
-  , po_succes               out nocopy boolean
+  , po_success              out nocopy boolean
   , po_sync_fail_reason     out nocopy offline_data_sync.sync_fail_reason%type
   , po_sync_device_pk       out nocopy offline_data_sync.sync_device_pk%type
   , po_snyc_db_pk           out nocopy offline_data_sync.sync_db_pk%type
@@ -181,7 +143,7 @@ create or replace package body offline_data_sync_api as
 		l_change_type varchar2(1);
 		l_change_date date;
   begin
-    po_succes := false;
+    po_success := false;
 		l_json := json_object_t.parse(pi_json_str);
 		l_change_date := get_change_date(l_json);
 		l_change_type := get_change_type(l_json);
@@ -194,7 +156,16 @@ create or replace package body offline_data_sync_api as
 
 
     case when pi_sync_storage_id = 'people' and pi_sync_storage_version = 1 then
-      process_people_v1(pi_row, po_succes);
+      process_people_v1(
+        pi_json => l_json
+      , pi_change_type => l_change_type
+      , pi_change_date => l_change_date
+      , pi_updated_by => v('APP_USER')
+      , po_success => po_success
+      , po_sync_fail_reason => po_sync_fail_reason
+      , po_sync_device_pk => po_sync_device_pk
+      , po_snyc_db_pk => po_snyc_db_pk
+      );
     else
       po_sync_fail_reason := apex_string.format('Unhandled storage: %0 v%1', pi_sync_storage_id, pi_sync_storage_version);
       return;

@@ -9,18 +9,18 @@
     "start": "sirv public --no-clear"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^25.0.2",
-    "@rollup/plugin-node-resolve": "^15.1.0",
-    "@rollup/plugin-replace": "^5.0.2",
-    "@rollup/plugin-terser": "^0.4.3",
-    "rollup": "^3.25.1",
-    "rollup-plugin-css-only": "^4.3.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-replace": "^5.0.5",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.13.0",
+    "rollup-plugin-css-only": "^4.5.2",
     "rollup-plugin-livereload": "^2.0.5",
-    "rollup-plugin-svelte": "^7.1.5",
-    "svelte": "^4.0.0"
+    "rollup-plugin-svelte": "^7.2.0",
+    "svelte": "^4.2.12"
   },
   "dependencies": {
-    "@tanstack/svelte-table": "^8.9.2",
+    "@tanstack/svelte-table": "^8.13.2",
     "sirv-cli": "^2.0.2"
   }
 }
