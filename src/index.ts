@@ -22,6 +22,7 @@ import { initMsgBus, sendMsgToWorker } from './messageBus';
 import initStorageMethods, { setStorageReady } from './storageMethods';
 import { getLastSync, syncRows } from './sync';
 import { StorageInitMode } from './types';
+import evalRowString from './util/evalRowString';
 import { Colinfo } from './worker/db/types';
 
 declare global {
@@ -660,6 +661,9 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
     mergeRegionData: _mergeRegionData,
     getRegionData: _getRegionData,
   };
+
+  window.hartenfeller_dev.plugins.sync_offline_data.evalRowString =
+    evalRowString;
 }
 
 (() => {
