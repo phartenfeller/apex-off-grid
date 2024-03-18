@@ -311,7 +311,7 @@ function fixDataTypes({
     if (!row[col.colname] && row[col.colname] !== '0') {
       row[col.colname] = null;
     } else if (col.datatype === 'real') {
-      row[col.colname] = parseFloat(row[col.colname] as string);
+      row[col.colname] = Number.parseFloat(row[col.colname] as string);
     }
   }
 
@@ -362,7 +362,7 @@ export function writeChanges({
         const binds: DbRow = {};
 
         switch (row[CHANGE_TYPE_COL]) {
-          case 'I':
+          case 'I': {
             sql = `
             insert into ${tabname} (
               ${colStructure.cols.map((c) => c.colname).join(',\n')}
@@ -413,8 +413,9 @@ export function writeChanges({
             insStmnt.finalize();
 
             break;
+          }
 
-          case 'U':
+          case 'U': {
             const dbRow = getRowByPk(
               storageId,
               storageVersion,
@@ -431,6 +432,11 @@ export function writeChanges({
                 row,
               );
               continue;
+            }
+
+            //  if row was first inserted and then updated, we need to keep the insert change type
+            if (dbRow.row[CHANGE_TYPE_COL] === 'I') {
+              row[CHANGE_TYPE_COL] = 'I';
             }
 
             sql = `
@@ -464,8 +470,9 @@ export function writeChanges({
             updateStmnt.finalize();
 
             break;
+          }
 
-          case 'D':
+          case 'D': {
             sql = `
             update ${tabname}
             set ${CHANGE_TS_COL} = $${CHANGE_TS_COL}
@@ -490,6 +497,7 @@ export function writeChanges({
               log.error(`Error deleting row (${tabname}):`, err, sql, binds);
             }
             delStmnt.finalize();
+          }
         }
       }
     });

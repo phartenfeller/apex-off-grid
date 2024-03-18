@@ -22,6 +22,7 @@ import { initMsgBus, sendMsgToWorker } from './messageBus';
 import initStorageMethods, { setStorageReady } from './storageMethods';
 import { getLastSync, syncRows } from './sync';
 import { StorageInitMode } from './types';
+import evalPageItems from './util/evalPageItems';
 import evalRowString from './util/evalRowString';
 import { Colinfo } from './worker/db/types';
 
@@ -664,6 +665,8 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
 
   window.hartenfeller_dev.plugins.sync_offline_data.evalRowString =
     evalRowString;
+
+  window.hartenfeller_dev.plugins.sync_offline_data.evalPageItems = evalPageItems;
 }
 
 (() => {

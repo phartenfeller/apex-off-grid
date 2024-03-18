@@ -1,0 +1,21 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.6.1/schema.json",
+	"organizeImports": {
+		"enabled": true
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"complexity": {
+				"useArrowFunction": "off",
+				"noForEach": "off"
+			},
+			"style": {
+				"useImportType": "off",
+				"noUselessElse": "off",
+				"noUnusedTemplateLiteral": "off"
+			}
+		}
+	}
+}
