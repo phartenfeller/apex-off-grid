@@ -1,6 +1,6 @@
 // @ts-ignore
 import { ajax } from './apex/ajax';
-import cachePage from './apex/pageCache';
+import { cachAppPages, cacheCurrentPage } from './apex/pageCache';
 import {
   DbStatus,
   DoesStorageExistResponse,
@@ -372,7 +372,7 @@ async function initStorage({
   });
 
   switch (mode) {
-    case 'DEFAULT':
+    case 'DEFAULT': {
       const isEmpty = await initStorageWithSource({
         storageId,
         storageVersion,
@@ -403,6 +403,7 @@ async function initStorage({
       setStorageReady({ storageId, storageVersion, apex });
 
       break;
+    }
 
     case 'LOAD_EXISTING':
       await initStorageWithoutSource({
@@ -452,7 +453,7 @@ async function initStorage({
 
       break;
 
-    case 'DEPRECATED':
+    case 'DEPRECATED': {
       const existsRes = await sendMsgToWorker({
         storageId,
         storageVersion,
@@ -498,6 +499,7 @@ async function initStorage({
       }
 
       break;
+    }
 
     default:
       throw new Error(`Unknown mode: ${mode}`);
@@ -667,10 +669,12 @@ if (!window.hartenfeller_dev.plugins.sync_offline_data.sync) {
     evalRowString;
 
   window.hartenfeller_dev.plugins.sync_offline_data.evalPageItems = evalPageItems;
+
+  window.hartenfeller_dev.plugins.sync_offline_data.cachAppPages = cachAppPages;
 }
 
 (() => {
   setTimeout(() => {
-    cachePage(window.apex);
+    cacheCurrentPage();
   }, 1000 * 5);
 })();
