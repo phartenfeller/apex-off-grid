@@ -7,9 +7,13 @@ function showSpinner({ apex, regionId }) {
 }
 
 function hideSpinner() {
-  if (spinner) {
-    spinner.remove();
-    spinner = null;
+  try {
+    if (spinner) {
+      spinner.remove();
+      spinner = null;
+    }
+  } catch (err) {
+    apex.debug.warn('Could not remove spinner', err);
   }
 }
 
