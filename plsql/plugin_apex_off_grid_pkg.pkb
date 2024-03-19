@@ -35,8 +35,8 @@ create or replace package body plugin_apex_off_grid_pkg as
 
     l_storage_id           p_dynamic_action.attribute_03%type := p_dynamic_action.attribute_03;
     l_storage_version      p_dynamic_action.attribute_02%type := p_dynamic_action.attribute_02;
-    l_pk_colname           p_dynamic_action.attribute_04%type := p_dynamic_action.attribute_04;
-    l_last_changed_colname p_dynamic_action.attribute_05%type := p_dynamic_action.attribute_05;
+    l_pk_colname           p_dynamic_action.attribute_04%type := upper(p_dynamic_action.attribute_04);
+    l_last_changed_colname p_dynamic_action.attribute_05%type := upper(p_dynamic_action.attribute_05);
     l_page_size            p_dynamic_action.attribute_06%type := p_dynamic_action.attribute_06;
     l_sync_timeout         p_dynamic_action.attribute_07%type := p_dynamic_action.attribute_07;
     l_mode                 p_dynamic_action.attribute_08%type := p_dynamic_action.attribute_08;
